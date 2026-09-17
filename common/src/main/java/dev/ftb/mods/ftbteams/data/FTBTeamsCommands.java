@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbteams.data;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -16,6 +17,7 @@ import dev.ftb.mods.ftbteams.api.*;
 import dev.ftb.mods.ftbteams.api.event.TeamEvent;
 import dev.ftb.mods.ftbteams.api.event.TeamInfoEvent;
 import dev.ftb.mods.ftbteams.api.property.TeamPropertyArgument;
+import dev.ftb.mods.ftbteams.api.property.TeamProperties;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
@@ -232,6 +234,26 @@ public class FTBTeamsCommands {
 								)
 						)
 				)
+				.then(Commands.literal("faction")
+						.then(Commands.literal("capital")
+								.then(Commands.literal("set")
+										.requires(source -> hasParty(source, TeamRank.OWNER))
+										.executes(FTBTeamsCommands::setFactionCapital)
+								)
+								.then(Commands.literal("clear")
+										.requires(source -> hasParty(source, TeamRank.OWNER))
+										.executes(FTBTeamsCommands::clearFactionCapital)
+								)
+						)
+						.then(Commands.literal("level")
+								.requires(requiresOPorSP())
+								.then(createTeamArg(TeamType.PARTY)
+										.then(Commands.argument("level", IntegerArgumentType.integer(1, 100))
+												.executes(FTBTeamsCommands::setFactionLevel)
+										)
+								)
+						)
+				)
 		);
 
 		if (Platform.isDevelopmentEnvironment()) {
@@ -378,6 +400,41 @@ public class FTBTeamsCommands {
 		mgr.setChatRedirected(player, !mgr.isChatRedirected(player));
 		String key = "ftbteams.message.chat_redirected." + (mgr.isChatRedirected(player) ? "on" : "off");
 		ctx.getSource().sendSuccess(() -> Component.translatable(key).withStyle(ChatFormatting.ITALIC, ChatFormatting.GOLD), false);
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int setFactionCapital(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		PartyTeam team = getPartyTeam(ctx, TeamRank.OWNER);
+		var pos = player.blockPosition();
+		String dimension = player.level().dimension().location().toString();
+		team.setProperty(TeamProperties.FACTION_CAPITAL_DIMENSION, dimension);
+		team.setProperty(TeamProperties.FACTION_CAPITAL_X, pos.getX());
+		team.setProperty(TeamProperties.FACTION_CAPITAL_Y, pos.getY());
+		team.setProperty(TeamProperties.FACTION_CAPITAL_Z, pos.getZ());
+		team.syncOnePropertyToAll(player.server, TeamProperties.FACTION_CAPITAL_DIMENSION, dimension);
+		team.syncOnePropertyToAll(player.server, TeamProperties.FACTION_CAPITAL_X, pos.getX());
+		team.syncOnePropertyToAll(player.server, TeamProperties.FACTION_CAPITAL_Y, pos.getY());
+		team.syncOnePropertyToAll(player.server, TeamProperties.FACTION_CAPITAL_Z, pos.getZ());
+		ctx.getSource().sendSuccess(() -> Component.translatable("ftbteams.faction.capital_set", pos.getX(), pos.getY(), pos.getZ()), true);
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int clearFactionCapital(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		PartyTeam team = getPartyTeam(ctx, TeamRank.OWNER);
+		team.setProperty(TeamProperties.FACTION_CAPITAL_DIMENSION, "");
+		team.syncOnePropertyToAll(player.server, TeamProperties.FACTION_CAPITAL_DIMENSION, "");
+		ctx.getSource().sendSuccess(() -> Component.translatable("ftbteams.faction.capital_cleared"), true);
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int setFactionLevel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		PartyTeam team = partyTeamArg(ctx, TeamRank.NONE);
+		int level = IntegerArgumentType.getInteger(ctx, "level");
+		team.setProperty(TeamProperties.FACTION_LEVEL, level);
+		team.syncOnePropertyToAll(ctx.getSource().getServer(), TeamProperties.FACTION_LEVEL, level);
+		ctx.getSource().sendSuccess(() -> Component.translatable("ftbteams.faction.level_set", team.getName(), level), true);
 		return Command.SINGLE_SUCCESS;
 	}
 

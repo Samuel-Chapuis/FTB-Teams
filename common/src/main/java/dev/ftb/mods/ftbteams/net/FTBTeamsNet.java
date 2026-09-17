@@ -14,6 +14,7 @@ public class FTBTeamsNet {
 
 		NetworkHelper.registerC2S(OpenGUIMessage.TYPE, OpenGUIMessage.STREAM_CODEC, OpenGUIMessage::handle);
 		NetworkHelper.registerC2S(UpdatePropertiesRequestMessage.TYPE, UpdatePropertiesRequestMessage.STREAM_CODEC, UpdatePropertiesRequestMessage::handle);
+		NetworkHelper.registerC2S(UpdateFactionLogoMessage.TYPE, UpdateFactionLogoMessage.STREAM_CODEC, UpdateFactionLogoMessage::handle);
 		NetworkHelper.registerC2S(SendMessageMessage.TYPE, SendMessageMessage.STREAM_CODEC, SendMessageMessage::handle);
 		NetworkHelper.registerC2S(CreatePartyMessage.TYPE, CreatePartyMessage.STREAM_CODEC, CreatePartyMessage::handle);
 		NetworkHelper.registerC2S(PlayerGUIOperationMessage.TYPE, PlayerGUIOperationMessage.STREAM_CODEC, PlayerGUIOperationMessage::handle);

@@ -11,6 +11,13 @@ import java.util.regex.Pattern;
  * see {@link dev.ftb.mods.ftbteams.api.event.TeamCollectPropertiesEvent}.
  */
 public class TeamProperties {
+	/** The side length, in pixels, of a faction banner. */
+	public static final int FACTION_LOGO_SIZE = 32;
+	/** The original 4-bit-per-pixel format, retained only so existing saved logos can be migrated. */
+	public static final int LEGACY_FACTION_LOGO_ENCODED_LENGTH = 683;
+	/** A 32x32 ARGB image is 4096 bytes, or 5462 unpadded base64 characters. */
+	public static final int FACTION_LOGO_ENCODED_LENGTH = 5462;
+	private static final String EMPTY_FACTION_LOGO = "A".repeat(FACTION_LOGO_ENCODED_LENGTH);
     public static final StringProperty DISPLAY_NAME
             = (StringProperty) new StringProperty(FTBTeamsAPI.rl("display_name"), "", Pattern.compile(".{3,}"))
             .syncToAll();
@@ -31,4 +38,39 @@ public class TeamProperties {
             = (IntProperty) new IntProperty(FTBTeamsAPI.rl("lives_remaining"), 0, 0, Integer.MAX_VALUE)
             .hidden()
             .notPlayerEditable();
+	/**
+	 * Public faction progression value. It is intentionally server-managed: the population system will calculate it
+	 * later, while administrators can adjust it with the faction command during the transition.
+	 */
+	public static final IntProperty FACTION_LEVEL
+			= (IntProperty) new IntProperty(FTBTeamsAPI.rl("faction_level"), 1, 1, 100)
+			.syncToAll()
+			.notPlayerEditable();
+	/** A compact, palette-indexed 32x32 faction logo. See {@code FactionLogo}. */
+	public static final StringProperty FACTION_LOGO
+			= (StringProperty) new StringProperty(FTBTeamsAPI.rl("faction_logo"), EMPTY_FACTION_LOGO,
+					Pattern.compile("[A-Za-z0-9_-]{" + LEGACY_FACTION_LOGO_ENCODED_LENGTH + "}|[A-Za-z0-9_-]{" + FACTION_LOGO_ENCODED_LENGTH + "}"))
+			.syncToAll()
+			.hidden()
+			.notPlayerEditable();
+	public static final StringProperty FACTION_CAPITAL_DIMENSION
+			= (StringProperty) new StringProperty(FTBTeamsAPI.rl("faction_capital_dimension"), "")
+			.syncToAll()
+			.hidden()
+			.notPlayerEditable();
+	public static final IntProperty FACTION_CAPITAL_X
+			= (IntProperty) new IntProperty(FTBTeamsAPI.rl("faction_capital_x"), 0)
+			.syncToAll()
+			.hidden()
+			.notPlayerEditable();
+	public static final IntProperty FACTION_CAPITAL_Y
+			= (IntProperty) new IntProperty(FTBTeamsAPI.rl("faction_capital_y"), 0)
+			.syncToAll()
+			.hidden()
+			.notPlayerEditable();
+	public static final IntProperty FACTION_CAPITAL_Z
+			= (IntProperty) new IntProperty(FTBTeamsAPI.rl("faction_capital_z"), 0)
+			.syncToAll()
+			.hidden()
+			.notPlayerEditable();
 }

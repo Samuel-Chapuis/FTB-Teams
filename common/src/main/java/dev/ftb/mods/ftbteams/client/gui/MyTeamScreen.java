@@ -5,6 +5,7 @@ import dev.ftb.mods.ftblibrary.config.ColorConfig;
 import dev.ftb.mods.ftblibrary.config.ConfigGroup;
 import dev.ftb.mods.ftblibrary.config.ui.EditConfigScreen;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
+import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.icon.Icons;
 import dev.ftb.mods.ftblibrary.ui.*;
 import dev.ftb.mods.ftblibrary.ui.input.Key;
@@ -16,9 +17,11 @@ import dev.ftb.mods.ftbteams.api.TeamMessage;
 import dev.ftb.mods.ftbteams.api.TeamRank;
 import dev.ftb.mods.ftbteams.api.client.ClientTeamManager;
 import dev.ftb.mods.ftbteams.api.client.KnownClientPlayer;
+import dev.ftb.mods.ftbteams.api.faction.FactionProperties;
 import dev.ftb.mods.ftbteams.api.property.TeamProperties;
 import dev.ftb.mods.ftbteams.api.property.TeamPropertyCollection;
 import dev.ftb.mods.ftbteams.client.FTBTeamsClient;
+import dev.ftb.mods.ftbteams.config.ClientConfig;
 import dev.ftb.mods.ftbteams.config.ServerConfig;
 import dev.ftb.mods.ftbteams.data.ClientTeamManagerImpl;
 import dev.ftb.mods.ftbteams.data.PlayerPermissions;
@@ -38,6 +41,8 @@ import java.text.DateFormat;
 import java.util.*;
 
 public class MyTeamScreen extends BaseScreen implements NordColors {
+	private static final Icon FACTION_CROWN_ICON = Icon.getIcon(FTBTeamsAPI.rl("textures/crown.png"));
+	private static final Icon FACTION_PEN_ICON = Icon.getIcon(FTBTeamsAPI.rl("textures/pen.png"));
 	private final TeamPropertyCollection properties;
 	private final PlayerPermissions permissions;
 	private final UUID teamID;
@@ -46,6 +51,9 @@ public class MyTeamScreen extends BaseScreen implements NordColors {
 	private Button livesButton;
 	private Button missingDataButton;
 	private Button colorButton;
+	private Button logoButton;
+	private Button factionScoreboardButton;
+	private Button factionHudVisibilityButton;
 	private Button toggleChatButton;
 	private Button inviteButton;
 	private Button allyButton;
@@ -138,6 +146,11 @@ public class MyTeamScreen extends BaseScreen implements NordColors {
 			}
 		});
 
+		add(logoButton = new LogoButton());
+		add(factionScoreboardButton = new SimpleButton(this, Component.translatable("ftbteams.gui.faction_scoreboard"), FACTION_CROWN_ICON,
+				(button, mouseButton) -> new FactionScoreboardScreen().openGui()));
+		add(factionHudVisibilityButton = new FactionHudVisibilityButton());
+
 		add(toggleChatButton = new ToggleChatButton(this));
 		add(inviteButton = new InviteButton(this));
 		add(allyButton = new AllyButton(this));
@@ -155,6 +168,9 @@ public class MyTeamScreen extends BaseScreen implements NordColors {
 		infoButton.setPosAndSize(20, 3, 16, 16);
 		if (livesButton != null) livesButton.setPosAndSize(40, 3, 16, 16);
 		if (missingDataButton != null) missingDataButton.setPosAndSize(60, 3, 16, 16);
+		logoButton.setPosAndSize(80, 3, 16, 16);
+		factionScoreboardButton.setPosAndSize(100, 3, 16, 16);
+		factionHudVisibilityButton.setPosAndSize(120, 3, 16, 16);
 
 		settingsButton.setPosAndSize(width - 19, 3, 16, 16);
 		inviteButton.setPosAndSize(width - 37, 3, 16, 16);
@@ -173,6 +189,13 @@ public class MyTeamScreen extends BaseScreen implements NordColors {
 			list.add(Component.translatable("ftbteams.info.short_id", Component.literal(team.getShortName()).withStyle(ChatFormatting.YELLOW)));
 			if (!team.getOwner().equals(Util.NIL_UUID)) {
 				list.add(Component.translatable("ftbteams.info.owner", getManager().formatName(team.getOwner())));
+			}
+			if (FactionProperties.isFaction(team)) {
+				list.add(Component.translatable("ftbteams.faction.level", FactionProperties.level(team)));
+				FactionProperties.Capital capital = FactionProperties.capital(team);
+				if (capital != null) {
+					list.add(Component.translatable("ftbteams.faction.capital", capital.dimension().location().toString(), capital.pos().getX(), capital.pos().getY(), capital.pos().getZ()));
+				}
 			}
 		}
 	}
@@ -220,6 +243,40 @@ public class MyTeamScreen extends BaseScreen implements NordColors {
 		@Override
 		public boolean shouldDraw() {
 			return isEnabled();
+		}
+	}
+
+	private class LogoButton extends SimpleButton {
+		public LogoButton() {
+			super(MyTeamScreen.this, Component.translatable("ftbteams.gui.edit_logo"), FACTION_PEN_ICON, (button, mouseButton) ->
+					new FactionLogoEditorScreen(getManager().selfTeam().getProperty(TeamProperties.FACTION_LOGO)).openGui()
+			);
+		}
+
+		@Override
+		public boolean isEnabled() {
+			KnownClientPlayer self = ClientTeamManagerImpl.getInstance().self();
+			return self != null && getManager().selfTeam().isPartyTeam()
+					&& getManager().selfTeam().getRankForPlayer(self.id()) == TeamRank.OWNER;
+		}
+
+		@Override
+		public boolean shouldDraw() {
+			return isEnabled();
+		}
+	}
+
+	private class FactionHudVisibilityButton extends SimpleButton {
+		private FactionHudVisibilityButton() {
+			super(MyTeamScreen.this, Component.empty(), Icons.VISIBILITY_SHOW, (button, mouseButton) -> {
+				FTBTeamsClient.toggleFactionLogoVisibility();
+				button.setIcon(FTBTeamsClient.shouldShowFactionLogo() ? Icons.VISIBILITY_SHOW : Icons.VISIBILITY_HIDE);
+			});
+		}
+
+		@Override
+		public void addMouseOverText(TooltipList list) {
+			list.add(Component.translatable(FTBTeamsClient.shouldShowFactionLogo() ? "ftbteams.gui.hide_faction_hud_logo" : "ftbteams.gui.show_faction_hud_logo"));
 		}
 	}
 

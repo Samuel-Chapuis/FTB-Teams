@@ -99,8 +99,14 @@ public class FTBTeams {
 		event.add(TeamProperties.COLOR);
 		event.add(TeamProperties.FREE_TO_JOIN);
 		event.add(TeamProperties.MAX_MSG_HISTORY_SIZE);
-		event.add(TeamProperties.TEAM_STAGES);
-		event.add(TeamProperties.LIVES_REMAINING);
+		 event.add(TeamProperties.TEAM_STAGES);
+		 event.add(TeamProperties.LIVES_REMAINING);
+		event.add(TeamProperties.FACTION_LEVEL);
+		event.add(TeamProperties.FACTION_LOGO);
+		event.add(TeamProperties.FACTION_CAPITAL_DIMENSION);
+		event.add(TeamProperties.FACTION_CAPITAL_X);
+		event.add(TeamProperties.FACTION_CAPITAL_Y);
+		event.add(TeamProperties.FACTION_CAPITAL_Z);
 	}
 
 	private void playerLoggedIn(ServerPlayer player) {

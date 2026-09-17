@@ -12,6 +12,7 @@ import dev.ftb.mods.ftbteams.api.Team;
 import dev.ftb.mods.ftbteams.api.TeamMessage;
 import dev.ftb.mods.ftbteams.api.TeamRank;
 import dev.ftb.mods.ftbteams.api.event.*;
+import dev.ftb.mods.ftbteams.api.faction.FactionProperties;
 import dev.ftb.mods.ftbteams.api.property.TeamProperty;
 import dev.ftb.mods.ftbteams.api.property.TeamPropertyCollection;
 import dev.ftb.mods.ftbteams.net.SendMessageResponseMessage;
@@ -210,6 +211,12 @@ public abstract class AbstractTeam extends AbstractTeamBase {
 		res.add(Component.translatable("ftbteams.info.short_id", FTBTUtils.makeCopyableComponent(getShortName()).withStyle(ChatFormatting.YELLOW)));
 
 		if (isPartyTeam()) {
+			res.add(Component.translatable("ftbteams.faction.level", FactionProperties.level(this)));
+			FactionProperties.Capital capital = FactionProperties.capital(this);
+			if (capital != null) {
+				res.add(Component.translatable("ftbteams.faction.capital", capital.dimension().location().toString(), capital.pos().getX(), capital.pos().getY(), capital.pos().getZ()));
+			}
+
 			res.add(getOwner().equals(Util.NIL_UUID) ?
 					Component.translatable("ftbteams.info.owner", Component.translatable("ftbteams.info.owner.none").withStyle(ChatFormatting.GRAY)) :
 					Component.translatable("ftbteams.info.owner", playerWithId(getOwner()))

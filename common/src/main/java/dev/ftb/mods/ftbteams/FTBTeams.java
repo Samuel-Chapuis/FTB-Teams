@@ -23,6 +23,16 @@ import dev.ftb.mods.ftbteams.data.FTBTeamsCommands;
 import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
+import dev.ftb.mods.ftbteams.world.block.Enclosure;
+import dev.ftb.mods.ftbteams.world.block.SmallBedBlock;
+import dev.architectury.registry.registries.Registrar;
+import dev.architectury.registry.registries.RegistrarManager;
+import dev.architectury.registry.registries.RegistrySupplier;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.commands.CommandBuildContext;
@@ -39,6 +49,12 @@ import org.jetbrains.annotations.Nullable;
 
 public class FTBTeams {
 	public static final Logger LOGGER = LogManager.getLogger(FTBTeamsAPI.MOD_NAME);
+	public static final Registrar<Block> BLOCKS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK);
+	public static final Registrar<Item> ITEMS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.ITEM);
+	public static final RegistrySupplier<Enclosure> SMALL_BED = BLOCKS.register(FTBTeamsAPI.rl("small_bed"),
+			() -> new SmallBedBlock(BlockBehaviour.Properties.of().strength(1.0F)));
+	public static final RegistrySupplier<Item> SMALL_BED_ITEM = ITEMS.register(FTBTeamsAPI.rl("small_bed"),
+			() -> new BlockItem(SMALL_BED.get(), new Item.Properties()));
 
 	public FTBTeams() {
 		FTBTeamsAPI._init(FTBTeamsAPIImpl.INSTANCE);

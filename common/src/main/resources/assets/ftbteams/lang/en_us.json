@@ -127,5 +127,6 @@
 	"ftbteams.faction.table.members": "Members",
 	"ftbteams.faction.table.capital": "Capital",
 	"ftbteams.faction.table.no_capital": "Not set",
-	"ftbteams.faction.table.truncated": "%s more faction(s) not shown"
+	"ftbteams.faction.table.truncated": "%s more faction(s) not shown",
+	"block.ftbteams.small_bed": "Small Bed"
 }

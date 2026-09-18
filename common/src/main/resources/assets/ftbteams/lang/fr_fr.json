@@ -110,5 +110,6 @@
 	"ftbteams.faction.table.members": "Membres",
 	"ftbteams.faction.table.capital": "Capitale",
 	"ftbteams.faction.table.no_capital": "Non definie",
-	"ftbteams.faction.table.truncated": "%s faction(s) supplementaire(s) non affichee(s)"
+	"ftbteams.faction.table.truncated": "%s faction(s) supplementaire(s) non affichee(s)",
+	"block.ftbteams.small_bed": "Petit lit"
 }

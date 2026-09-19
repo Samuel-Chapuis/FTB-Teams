@@ -1,0 +1,6 @@
+{
+  "parent": "ftbteams:block/pop_bed",
+  "textures": {
+    "1": "minecraft:block/black_shulker_box"
+  }
+}

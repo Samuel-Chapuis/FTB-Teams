@@ -10,6 +10,26 @@ architectury {
 	common(/*"forge",*/ "fabric", "neoforge")
 }
 
+processResources {
+	// Keep original Blockbench exports for editing, but only ship normalized lowercase models.
+	exclude 'assets/ftbteams/models/block/PopBed*.json'
+}
+
+tasks.register('enclosureScannerTest', JavaExec) {
+	group = 'verification'
+	description = 'Run the bounded enclosure flood-fill regression tests.'
+	dependsOn testClasses
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'dev.ftb.mods.ftbteams.world.block.EnclosureScannerTest'
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+tasks.named('check') {
+	dependsOn enclosureScannerTest
+}
+
 publishing {
 	publications {
 		mavenCommon(MavenPublication) {

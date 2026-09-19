@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "ftbteams:white_pop_bed",
+    "ftbteams:orange_pop_bed",
+    "ftbteams:magenta_pop_bed",
+    "ftbteams:light_blue_pop_bed",
+    "ftbteams:yellow_pop_bed",
+    "ftbteams:lime_pop_bed",
+    "ftbteams:pink_pop_bed",
+    "ftbteams:gray_pop_bed",
+    "ftbteams:light_gray_pop_bed",
+    "ftbteams:pop_bed",
+    "ftbteams:purple_pop_bed",
+    "ftbteams:blue_pop_bed",
+    "ftbteams:brown_pop_bed",
+    "ftbteams:green_pop_bed",
+    "ftbteams:red_pop_bed",
+    "ftbteams:black_pop_bed"
+  ]
+}

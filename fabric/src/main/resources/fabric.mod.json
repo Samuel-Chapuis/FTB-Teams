@@ -13,6 +13,9 @@
 	},
 	"license": "All Rights Reserved",
 	"entrypoints": {
+		"client": [
+			"dev.ftb.mods.ftbteams.fabric.FTBTeamsFabricClient"
+		],
 		"main": [
 			"dev.ftb.mods.ftbteams.fabric.FTBTeamsFabric"
 		]

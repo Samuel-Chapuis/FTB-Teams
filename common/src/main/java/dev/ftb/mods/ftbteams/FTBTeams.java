@@ -23,14 +23,24 @@ import dev.ftb.mods.ftbteams.data.FTBTeamsCommands;
 import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
-import dev.ftb.mods.ftbteams.world.block.Enclosure;
-import dev.ftb.mods.ftbteams.world.block.SmallBedBlock;
+import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
+import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
+import dev.architectury.registry.menu.MenuRegistry;
+import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrarManager;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.ChatFormatting;
@@ -47,14 +57,37 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+
 public class FTBTeams {
 	public static final Logger LOGGER = LogManager.getLogger(FTBTeamsAPI.MOD_NAME);
 	public static final Registrar<Block> BLOCKS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK);
 	public static final Registrar<Item> ITEMS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.ITEM);
-	public static final RegistrySupplier<Enclosure> SMALL_BED = BLOCKS.register(FTBTeamsAPI.rl("small_bed"),
-			() -> new SmallBedBlock(BlockBehaviour.Properties.of().strength(1.0F)));
-	public static final RegistrySupplier<Item> SMALL_BED_ITEM = ITEMS.register(FTBTeamsAPI.rl("small_bed"),
-			() -> new BlockItem(SMALL_BED.get(), new Item.Properties()));
+	public static final Map<DyeColor, RegistrySupplier<PopBedBlock>> POP_BEDS = registerPopBeds();
+	public static final Map<DyeColor, RegistrySupplier<Item>> POP_BED_ITEMS = registerPopBedItems();
+	// Preserve the existing cyan registry ID and aliases for placed beds and saved inventories.
+	public static final RegistrySupplier<PopBedBlock> POP_BED = POP_BEDS.get(DyeColor.CYAN);
+	public static final RegistrySupplier<Item> POP_BED_ITEM = POP_BED_ITEMS.get(DyeColor.CYAN);
+	public static final RegistrySupplier<Item> TEAMS_ICON = ITEMS.register(FTBTeamsAPI.rl("teams_icon"),
+			() -> new Item(new Item.Properties()));
+	public static final Registrar<CreativeModeTab> CREATIVE_TABS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.CREATIVE_MODE_TAB);
+	public static final RegistrySupplier<CreativeModeTab> TEAMS_TAB = CREATIVE_TABS.register(FTBTeamsAPI.rl("teams"),
+			() -> CreativeTabRegistry.create(builder -> builder.title(Component.translatable("itemGroup.ftbteams"))
+					.icon(() -> new ItemStack(TEAMS_ICON.get()))
+					.displayItems((parameters, output) -> {
+						for (DyeColor color : DyeColor.values()) {
+							output.accept(POP_BED_ITEMS.get(color).get());
+						}
+					})));
+	public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK_ENTITY_TYPE);
+	public static final RegistrySupplier<BlockEntityType<EnclosureBlockEntity>> ENCLOSURE_BLOCK_ENTITY = BLOCK_ENTITIES.register(
+			FTBTeamsAPI.rl("enclosure"), () -> BlockEntityType.Builder.of(EnclosureBlockEntity::new,
+					POP_BEDS.values().stream().map(RegistrySupplier::get).toArray(Block[]::new)).build(null));
+	public static final Registrar<MenuType<?>> MENUS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.MENU);
+	public static final RegistrySupplier<MenuType<EnclosureMenu>> ENCLOSURE_MENU = MENUS.register(
+			FTBTeamsAPI.rl("enclosure"), () -> MenuRegistry.ofExtended(EnclosureMenu::new));
 
 	public FTBTeams() {
 		FTBTeamsAPI._init(FTBTeamsAPIImpl.INSTANCE);
@@ -75,6 +108,29 @@ public class FTBTeams {
 		ConfigManager.getInstance().registerServerConfig(ServerConfig.CONFIG, FTBTeamsAPI.MOD_ID + ".config.server", true);
 
 		FTBTeamsNet.register();
+	}
+
+	private static String popBedId(DyeColor color) {
+		return color == DyeColor.CYAN ? "pop_bed" : color.getName() + "_pop_bed";
+	}
+
+	private static Map<DyeColor, RegistrySupplier<PopBedBlock>> registerPopBeds() {
+		Map<DyeColor, RegistrySupplier<PopBedBlock>> beds = new EnumMap<>(DyeColor.class);
+		for (DyeColor color : DyeColor.values()) {
+			beds.put(color, BLOCKS.register(FTBTeamsAPI.rl(popBedId(color)),
+					() -> new PopBedBlock(BlockBehaviour.Properties.of().mapColor(color.getMapColor()).strength(1.0F)
+							.sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.DESTROY))));
+		}
+		return Collections.unmodifiableMap(beds);
+	}
+
+	private static Map<DyeColor, RegistrySupplier<Item>> registerPopBedItems() {
+		Map<DyeColor, RegistrySupplier<Item>> items = new EnumMap<>(DyeColor.class);
+		for (DyeColor color : DyeColor.values()) {
+			items.put(color, ITEMS.register(FTBTeamsAPI.rl(popBedId(color)),
+					() -> new BlockItem(POP_BEDS.get(color).get(), new Item.Properties().stacksTo(1))));
+		}
+		return Collections.unmodifiableMap(items);
 	}
 
 	private void serverStarted(MinecraftServer server) {

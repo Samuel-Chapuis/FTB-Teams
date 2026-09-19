@@ -24,6 +24,8 @@ import dev.ftb.mods.ftbteams.config.ServerConfig;
 import dev.ftb.mods.ftbteams.data.ClientTeamManagerImpl;
 import dev.ftb.mods.ftbteams.data.PlayerPermissions;
 import dev.ftb.mods.ftbteams.net.OpenGUIMessage;
+import dev.ftb.mods.ftbteams.net.EnclosurePreviewMessage;
+import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -38,6 +40,14 @@ import java.util.List;
 import java.util.UUID;
 
 public class FTBTeamsClient {
+	public static void updateEnclosurePreview(EnclosurePreviewMessage message) {
+		var player = Minecraft.getInstance().player;
+		if (player != null && player.containerMenu instanceof EnclosureMenu menu
+				&& menu.containerId == message.containerId() && menu.getOrigin().equals(message.origin())) {
+			menu.setPreview(message.preview());
+		}
+	}
+
 	public static final ResourceLocation OPEN_GUI_ID = FTBTeamsAPI.rl("open_gui");
 	public static final ResourceLocation TEAM_LIVES_ID = FTBTeamsAPI.rl("team_lives");
 	private static final int FACTION_LOGO_SLOT_SIZE = 22;

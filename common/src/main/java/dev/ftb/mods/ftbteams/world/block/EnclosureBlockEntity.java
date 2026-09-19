@@ -22,6 +22,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	private NonNullList<ItemStack> items;
 	private EnclosureScanner.Status status = EnclosureScanner.Status.UNCHECKED;
 	private int volume;
+	private EnclosurePreview preview = EnclosurePreview.EMPTY;
 	private long nextCheckTick;
 	private final ContainerData data = new ContainerData() {
 		@Override
@@ -73,7 +74,12 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		});
 		status = result.status();
 		volume = result.volume();
+		preview = EnclosurePreview.capture(level, worldPosition, result);
 		return true;
+	}
+
+	public EnclosurePreview getPreview() {
+		return preview;
 	}
 
 	private static EnclosureScanner.Position position(BlockPos pos) {
@@ -83,6 +89,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	@Override
 	public void saveExtraData(FriendlyByteBuf buf) {
 		buf.writeVarInt(getContainerSize());
+		buf.writeBlockPos(worldPosition);
 	}
 
 	@Override
@@ -124,5 +131,6 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		// A scan is a snapshot, not proof that the building is still closed after a reload.
 		status = EnclosureScanner.Status.UNCHECKED;
 		volume = 0;
+		preview = EnclosurePreview.EMPTY;
 	}
 }

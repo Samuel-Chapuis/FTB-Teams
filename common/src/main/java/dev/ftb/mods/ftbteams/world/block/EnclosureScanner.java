@@ -19,7 +19,10 @@ public final class EnclosureScanner {
 			return new Position(this.x + x, this.y + y, this.z + z);
 		}
 	}
-	public record Result(Status status, int volume) {
+	public record Result(Status status, int volume, Set<Position> boundary) {
+		public Result(Status status, int volume) {
+			this(status, volume, Set.of());
+		}
 	}
 	@FunctionalInterface
 	public interface CellLookup {
@@ -31,6 +34,7 @@ public final class EnclosureScanner {
 			throw new IllegalArgumentException("Enclosure radius must be between 1 and 32");
 		}
 		Set<Position> visited = new HashSet<>();
+		Set<Position> boundary = new HashSet<>();
 		ArrayDeque<Position> pending = new ArrayDeque<>(seeds);
 		int volume = 0;
 		while (!pending.isEmpty()) {
@@ -50,8 +54,10 @@ public final class EnclosureScanner {
 				for (int[] direction : DIRECTIONS) {
 					pending.addLast(pos.offset(direction[0], direction[1], direction[2]));
 				}
+			} else {
+				boundary.add(pos);
 			}
 		}
-		return new Result(volume == 0 ? Status.NO_INTERIOR : Status.SEALED, volume);
+		return volume == 0 ? new Result(Status.NO_INTERIOR, 0) : new Result(Status.SEALED, volume, Set.copyOf(boundary));
 	}
 }

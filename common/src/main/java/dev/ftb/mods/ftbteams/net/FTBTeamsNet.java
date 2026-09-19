@@ -4,6 +4,7 @@ import dev.ftb.mods.ftblibrary.util.NetworkHelper;
 
 public class FTBTeamsNet {
 	public static void register() {
+		NetworkHelper.registerS2C(EnclosurePreviewMessage.TYPE, EnclosurePreviewMessage.STREAM_CODEC, EnclosurePreviewMessage::handle);
 		NetworkHelper.registerS2C(SyncTeamsMessage.TYPE, SyncTeamsMessage.STREAM_CODEC, SyncTeamsMessage::handle);
 		NetworkHelper.registerS2C(SyncMessageHistoryMessage.TYPE, SyncMessageHistoryMessage.STREAM_CODEC, SyncMessageHistoryMessage::handle);
 		NetworkHelper.registerS2C(OpenMyTeamGUIMessage.TYPE, OpenMyTeamGUIMessage.STREAM_CODEC, OpenMyTeamGUIMessage::handle);

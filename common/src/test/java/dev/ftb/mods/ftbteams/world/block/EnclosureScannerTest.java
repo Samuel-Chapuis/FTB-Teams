@@ -14,6 +14,12 @@ public final class EnclosureScannerTest {
 	public static void main(String[] args) {
 		Result closed = scan(ORIGIN, SEEDS, 15, EnclosureScannerTest::room);
 		expect(closed.status() == Status.SEALED && closed.volume() == 27, "Closed 3x3x3 room has 27 air blocks");
+		expect(closed.boundary().size() == 54, "Preview contains precisely the six inner boundary surfaces");
+		expect(closed.boundary().contains(new Position(0, 0, 0)) && closed.boundary().contains(new Position(0, 4, 0)),
+				"Preview includes floor and roof for cutaway rendering");
+		expect(!closed.boundary().contains(new Position(0, 1, 0)) && !closed.boundary().contains(new Position(5, 1, 0)),
+				"Preview excludes air and unrelated exterior blocks");
+		expect(scan(ORIGIN, SEEDS, 15, p -> Cell.AIR).boundary().isEmpty(), "Failed checks discard preview geometry");
 
 		for (Position hole : List.of(new Position(2, 1, 0), new Position(-2, 1, 0),
 				new Position(0, 0, 0), new Position(0, 4, 0), new Position(0, 1, 2), new Position(0, 1, -2))) {

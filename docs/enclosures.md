@@ -13,7 +13,7 @@ personnalisés avec les textures vanilla et occupe deux blocs. Le clic droit sur
 ouvre la même interface. Il ne sert pas au sommeil des joueurs.
 
 L'interface comprend un bouton de vérification, un stockage de 25 cases,
-l'inventaire du joueur et un emplacement réservé à l'aperçu 3D. Le stockage est
+l'inventaire du joueur et un aperçu 3D en coupe. Le stockage est
 sauvegardé dans la tête du lit ; casser l'une des moitiés retire le lit entier
 et libère son contenu. En survie, le lit ne donne qu'un seul objet.
 
@@ -24,6 +24,39 @@ infobulles des cases vides décrivent ces rôles. Les constantes `INPUT_SLOTS` e
 `isOutputSlot()` du menu, permettent aux futurs bâtiments de les identifier.
 Pour le Pop Bed de test, les deux zones restent accessibles au dépôt et au
 retrait ; aucune production automatique ni restriction de sortie n'est ajoutée.
+
+## Aperçu 3D et coupe de l'intérieur
+
+Cliquer sur **Vérifier** dans une pièce fermée pour construire l'aperçu.
+Le serveur transmet les blocs qui touchent le volume d'air validé : sol,
+parois, toit, lit et mobilier en contact avec cet air. Il ne transmet ni les
+inventaires, ni les données des entités de bloc, ni les bâtiments environnants.
+Les différents joueurs qui consultent le même lit reçoivent le résultat.
+
+- Glisser avec le bouton gauche : tourner autour de la pièce.
+- Molette : zoomer.
+- Maj + glisser, ou bouton droit + glisser : déplacer la vue.
+- Curseur **Coupe**, ou Maj + molette : avancer/reculer le plan de coupe.
+- Bouton **R** : réinitialiser angle, zoom, déplacement et coupe.
+
+La coupe est activée par défaut. Son plan est perpendiculaire à la direction
+de la caméra et la suit pendant la rotation. Les portions de faces situées
+devant ce plan sont retirées, avec interpolation des textures aux intersections.
+Cela ouvre les murs et le toit du côté de l'observateur pour regarder dans la
+pièce. À 0 %, le bâtiment entier est visible ; augmenter la valeur permet de
+regarder plus profondément. Cette coupe ne modifie jamais les blocs du monde.
+
+L'aperçu correspond à la dernière vérification : cliquer à nouveau après une
+modification. Une vérification échouée efface l'aperçu précédent. Après un
+rechargement du monde, une nouvelle vérification est nécessaire.
+
+Les modèles JSON et leurs textures (dont les 16 Pop Beds) sont utilisés.
+Les blocs qui ont un renderer spécial, tels les coffres, et les liquides ont
+une représentation simplifiée, signalée par un astérisque avec infobulle.
+Les joueurs, créatures et autres entités ne sont pas affichés. Les très grandes
+géométries sont limitées à 120 000 faces, avec un signalement si l'aperçu est
+partiel. Le maillage est conservé en mémoire et la découpe n'est recalculée
+que lorsque l'angle, la coupe ou les données changent.
 
 ## Modèles et textures
 
@@ -84,11 +117,13 @@ monde, le résultat revient à « non vérifié ».
 
 ## Vérification
 
-`gradlew :common:enclosureScannerTest :fabric:build :neoforge:build`
+`gradlew :common:check :fabric:build :neoforge:build`
 
 Les tests automatisés couvrent la fermeture, les ouvertures dans les six
 directions, les contacts diagonaux, les deux points de départ, le volume,
 la borne de recherche, les chunks indisponibles et les coordonnées négatives.
+Les tests de géométrie vérifient les faces cachées/conservées, les intersections
+du plan de coupe, l'interpolation des UV/couleurs et la rotation de la coupe.
 
 À vérifier dans un monde de test sur chaque loader :
 
@@ -102,6 +137,11 @@ la borne de recherche, les chunks indisponibles et les coordonnées négatives.
    restante, contenu libéré une seule fois, un objet lit seulement en survie.
 5. Ouvrir le même lit à deux joueurs : les objets et résultats doivent être
    synchronisés. S'éloigner ou détruire le lit doit fermer le menu.
+6. Vérifier une pièce avec toit et mobilier, tourner la vue et varier la coupe :
+   les parois devant la caméra doivent disparaître progressivement, en laissant
+   apparaître l'intérieur. Vérifier zoom, déplacement et réinitialisation.
+7. Percer un mur puis relancer la vérification : l'ancien aperçu doit disparaître
+   chez tous les joueurs consultant le lit. Refermer et revérifier pour le recréer.
 
-L'aperçu 3D, la capacité des maisons, les minions et les effets sur les factions
+La capacité des maisons, les minions et les effets sur les factions
 seront ajoutés dans les étapes suivantes.

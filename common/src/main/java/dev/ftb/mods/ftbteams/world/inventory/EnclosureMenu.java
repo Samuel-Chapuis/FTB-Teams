@@ -1,6 +1,11 @@
 package dev.ftb.mods.ftbteams.world.inventory;
 
 import dev.ftb.mods.ftbteams.FTBTeams;
+import dev.ftb.mods.ftblibrary.util.NetworkHelper;
+import dev.ftb.mods.ftbteams.net.EnclosurePreviewMessage;
+import dev.ftb.mods.ftbteams.world.block.EnclosurePreview;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.block.EnclosureScanner;
@@ -21,15 +26,22 @@ public class EnclosureMenu extends AbstractContainerMenu {
 	private final Container container;
 	private final ContainerData data;
 	private final int storageSize;
+	private final Player viewer;
+	private BlockPos origin;
+	private EnclosurePreview preview = EnclosurePreview.EMPTY;
+	private EnclosurePreview lastSentPreview;
 
 	public EnclosureMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
 		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(2));
+		origin = buf.readBlockPos();
 	}
 
 	public EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data) {
 		super(FTBTeams.ENCLOSURE_MENU.get(), id);
 		this.container = container;
 		this.data = data;
+		viewer = inventory.player;
+		origin = container instanceof EnclosureBlockEntity enclosure ? enclosure.getBlockPos() : BlockPos.ZERO;
 		storageSize = container.getContainerSize();
 		if (storageSize != 0 && storageSize != EnclosureBlock.STORAGE_SIZE) {
 			throw new IllegalArgumentException("Enclosure storage must have 0 or 25 slots");
@@ -48,6 +60,28 @@ public class EnclosureMenu extends AbstractContainerMenu {
 			addSlot(new Slot(inventory, col, PLAYER_X + col * 18, PLAYER_Y + 58));
 		}
 		addDataSlots(data);
+	}
+
+	public BlockPos getOrigin() {
+		return origin;
+	}
+
+	public EnclosurePreview getPreview() {
+		return preview;
+	}
+
+	public void setPreview(EnclosurePreview preview) {
+		this.preview = preview;
+	}
+
+	@Override
+	public void broadcastChanges() {
+		super.broadcastChanges();
+		if (viewer instanceof ServerPlayer player && container instanceof EnclosureBlockEntity enclosure
+				&& stillValid(player) && enclosure.getPreview() != lastSentPreview) {
+			lastSentPreview = enclosure.getPreview();
+			NetworkHelper.sendTo(player, new EnclosurePreviewMessage(containerId, origin, lastSentPreview));
+		}
 	}
 
 	public static int storageY(int slot) {

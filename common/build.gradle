@@ -28,6 +28,18 @@ tasks.register('enclosureScannerTest', JavaExec) {
 
 tasks.named('check') {
 	dependsOn enclosureScannerTest
+	dependsOn 'enclosurePreviewTest'
+}
+
+tasks.register('enclosurePreviewTest', JavaExec) {
+	group = 'verification'
+	description = 'Verify camera-facing cut planes and interpolated preview geometry.'
+	dependsOn testClasses
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'dev.ftb.mods.ftbteams.client.gui.PreviewGeometryTest'
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 publishing {

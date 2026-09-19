@@ -5,6 +5,7 @@ import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,12 @@ import java.util.Locale;
 
 /** Compact container layout following the grey controls / orange storage / green preview reference. */
 public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
+	private static final int PREVIEW_X = 130, PREVIEW_Y = 24, PREVIEW_WIDTH = 184, PREVIEW_HEIGHT = 84;
+	private final EnclosurePreviewRenderer previewRenderer = new EnclosurePreviewRenderer();
+	private CutSlider cutSlider;
+	private Button resetView;
+	private boolean draggingPreview;
+	private boolean panningPreview;
 	public EnclosureScreen(EnclosureMenu menu, Inventory inventory, Component title) {
 		super(menu, inventory, title);
 		imageWidth = 320;
@@ -29,10 +36,17 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 			}
 		}).bounds(leftPos + 7, topPos + 8, 67, 20)
 				.tooltip(Tooltip.create(Component.translatable("ftbteams.enclosure.check_tooltip"))).build());
+		cutSlider = addRenderableWidget(new CutSlider(leftPos + 132, topPos + 113));
+		resetView = addRenderableWidget(Button.builder(Component.literal("R"), button -> {
+			previewRenderer.reset();
+			cutSlider.sync();
+		}).bounds(leftPos + 294, topPos + 6, 18, 16)
+				.tooltip(Tooltip.create(Component.translatable("ftbteams.enclosure.preview_controls"))).build());
 	}
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+		cutSlider.active = resetView.active = !menu.getPreview().blocks().isEmpty();
 		super.render(graphics, mouseX, mouseY, partialTick);
 		renderTooltip(graphics, mouseX, mouseY);
 		if (menu.hasStorage()) {
@@ -48,6 +62,11 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 		}
 		if (mouseX >= leftPos + 77 && mouseX < leftPos + 118 && mouseY >= topPos + 3 && mouseY < topPos + 32) {
 			graphics.renderTooltip(font, font.split(statusDetail(), 220), mouseX, mouseY);
+		}
+		if (mouseX >= leftPos + 130 && mouseX < leftPos + 145 && mouseY >= topPos + 96 && mouseY < topPos + 109
+				&& (previewRenderer.isSimplified() || previewRenderer.isTruncated())) {
+			graphics.renderTooltip(font, font.split(Component.translatable(previewRenderer.isTruncated()
+					? "ftbteams.enclosure.preview_limited" : "ftbteams.enclosure.preview_simplified"), 220), mouseX, mouseY);
 		}
 	}
 
@@ -74,6 +93,8 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 			drawSlot(graphics, EnclosureMenu.PLAYER_X + col * 18, EnclosureMenu.PLAYER_Y + 58, 0xFF55585A);
 		}
 		graphics.pose().popPose();
+		previewRenderer.render(graphics, menu.getPreview(), menu.getOrigin(),
+				leftPos + PREVIEW_X, topPos + PREVIEW_Y, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 	}
 
 	@Override
@@ -88,8 +109,12 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 		int color = status == EnclosureScanner.Status.SEALED ? 0xFF68EE77 : status == EnclosureScanner.Status.UNCHECKED ? 0xFFCCCCCC : 0xFFFFA15A;
 		graphics.drawCenteredString(font, Component.translatable("ftbteams.enclosure." + key), 96, 19, color);
 		graphics.drawString(font, title, 134, 10, 0xFFD7F4DF);
-		graphics.drawCenteredString(font, Component.translatable("ftbteams.enclosure.preview"), 222, 48, 0xFF73B98B);
-		graphics.drawWordWrap(font, statusDetail(), 136, 76, 173, 0xFFB8D2BF);
+		if (menu.getPreview().blocks().isEmpty()) {
+			graphics.drawWordWrap(font, menu.getStatus() == EnclosureScanner.Status.SEALED
+					? Component.translatable("ftbteams.enclosure.preview_loading") : statusDetail(), 136, 40, 173, 0xFFB8D2BF);
+		} else if (previewRenderer.isSimplified() || previewRenderer.isTruncated()) {
+			graphics.drawString(font, "*", 134, 99, 0xFFFFD1A6);
+		}
 		if (!menu.hasStorage()) {
 			graphics.drawWordWrap(font, Component.translatable("ftbteams.enclosure.no_storage"), 12, 68, 96, 0xFFEBC9B4);
 		} else {
@@ -105,6 +130,75 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 
 	private Component statusDetail() {
 		return Component.translatable("ftbteams.enclosure.status." + menu.getStatus().name().toLowerCase(Locale.ROOT), menu.getVolume());
+	}
+
+	private boolean overPreview(double mouseX, double mouseY) {
+		return !menu.getPreview().blocks().isEmpty() && mouseX >= leftPos + PREVIEW_X && mouseX < leftPos + PREVIEW_X + PREVIEW_WIDTH
+				&& mouseY >= topPos + PREVIEW_Y && mouseY < topPos + PREVIEW_Y + PREVIEW_HEIGHT;
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (overPreview(mouseX, mouseY) && (button == 0 || button == 1)) {
+			draggingPreview = true;
+			panningPreview = button == 1 || hasShiftDown();
+			return true;
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+
+	@Override
+	public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+		if (draggingPreview) {
+			if (panningPreview) previewRenderer.pan(dx, dy);
+			else previewRenderer.rotate(dx, dy);
+			return true;
+		}
+		return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+	}
+
+	@Override
+	public boolean mouseReleased(double mouseX, double mouseY, int button) {
+		if (draggingPreview) {
+			draggingPreview = false;
+			return true;
+		}
+		return super.mouseReleased(mouseX, mouseY, button);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+		if (overPreview(mouseX, mouseY)) {
+			if (hasShiftDown()) {
+				previewRenderer.setCut(previewRenderer.getCut() + (float) vertical * 0.03F);
+				cutSlider.sync();
+			} else previewRenderer.zoom(vertical);
+			return true;
+		}
+		return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
+	}
+
+	private final class CutSlider extends AbstractSliderButton {
+		private CutSlider(int x, int y) {
+			super(x, y, 180, 18, Component.empty(), previewRenderer.getCut());
+			setTooltip(Tooltip.create(Component.translatable("ftbteams.enclosure.cut_tooltip")));
+			updateMessage();
+		}
+
+		private void sync() {
+			value = previewRenderer.getCut();
+			updateMessage();
+		}
+
+		@Override
+		protected void updateMessage() {
+			setMessage(Component.translatable("ftbteams.enclosure.cut", Math.round(value * 100)));
+		}
+
+		@Override
+		protected void applyValue() {
+			previewRenderer.setCut((float) value);
+		}
 	}
 
 	private static void panel(GuiGraphics graphics, int x, int y, int width, int height, int edge, int fill) {

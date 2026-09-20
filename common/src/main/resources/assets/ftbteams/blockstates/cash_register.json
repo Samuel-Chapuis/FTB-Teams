@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": {"model": "ftbteams:block/cash_register", "y": 180},
+    "facing=east": {"model": "ftbteams:block/cash_register", "y": 270},
+    "facing=south": {"model": "ftbteams:block/cash_register"},
+    "facing=west": {"model": "ftbteams:block/cash_register", "y": 90}
+  }
+}

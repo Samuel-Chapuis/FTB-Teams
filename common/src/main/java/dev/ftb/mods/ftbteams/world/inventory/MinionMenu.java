@@ -19,22 +19,24 @@ public class MinionMenu extends AbstractContainerMenu {
 	private final String factionName;
 	private final int factionColor;
 	private final String factionLogo;
+	private final String profession;
 
 	public MinionMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
-		this(id, inventory, buf.readVarInt(), buf.readUtf(96), buf.readInt(), buf.readUtf(8192));
+		this(id, inventory, buf.readVarInt(), buf.readUtf(96), buf.readInt(), buf.readUtf(8192), buf.readUtf(256));
 	}
 
 	public MinionMenu(int id, Inventory inventory, MinionEntity minion) {
-		this(id, inventory, minion.getId(), minion.getFactionName(), minion.getFactionColor(), minion.getFactionLogo());
+		this(id, inventory, minion.getId(), minion.getFactionName(), minion.getFactionColor(), minion.getFactionLogo(), minion.getProfession());
 	}
 
-	private MinionMenu(int id, Inventory inventory, int minionId, String factionName, int factionColor, String factionLogo) {
+	private MinionMenu(int id, Inventory inventory, int minionId, String factionName, int factionColor, String factionLogo, String profession) {
 		super(FTBTeams.MINION_MENU.get(), id);
 		viewer = inventory.player;
 		this.minionId = minionId;
 		this.factionName = factionName;
 		this.factionColor = factionColor;
 		this.factionLogo = factionLogo;
+		this.profession = profession;
 	}
 
 	public int getMinionId() {
@@ -52,6 +54,8 @@ public class MinionMenu extends AbstractContainerMenu {
 	public String getFactionLogo() {
 		return factionLogo;
 	}
+
+	public String getProfession() { return profession; }
 
 	@Override
 	public boolean stillValid(Player player) {

@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.block.EnclosureScanner;
+import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -29,12 +30,18 @@ public class EnclosureMenu extends AbstractContainerMenu {
 	private final int storageSize;
 	private final Player viewer;
 	private BlockPos origin;
+	private boolean cashRegister;
 	private EnclosurePreview preview = EnclosurePreview.EMPTY;
 	private EnclosurePreview lastSentPreview;
 
 	public EnclosureMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
-		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(3));
-		origin = buf.readBlockPos();
+		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(4), buf.readBlockPos(), buf.readBoolean());
+	}
+
+	private EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data, BlockPos origin, boolean cashRegister) {
+		this(id, inventory, container, data);
+		this.origin = origin;
+		this.cashRegister = cashRegister;
 	}
 
 	public EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data) {
@@ -47,7 +54,9 @@ public class EnclosureMenu extends AbstractContainerMenu {
 		if (storageSize != 0 && storageSize != EnclosureBlock.STORAGE_SIZE) {
 			throw new IllegalArgumentException("Enclosure storage must have 0 or 25 slots");
 		}
-		checkContainerDataCount(data, 3);
+		checkContainerDataCount(data, 4);
+		cashRegister = container instanceof EnclosureBlockEntity enclosure
+				&& enclosure.getBlockState().getBlock() instanceof CashRegisterBlock;
 		container.startOpen(inventory.player);
 		for (int slot = 0; slot < storageSize; slot++) {
 			addSlot(new Slot(container, slot, STORAGE_X + slot % 5 * 18, storageY(slot)));
@@ -113,6 +122,10 @@ public class EnclosureMenu extends AbstractContainerMenu {
 	public MinionHousing.Status getHousingStatus() {
 		return MinionHousing.Status.values()[data.get(2)];
 	}
+
+	public boolean isCashRegister() { return cashRegister; }
+
+	public int getWorkingMinions() { return data.get(3); }
 
 	@Override
 	public boolean clickMenuButton(Player player, int id) {

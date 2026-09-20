@@ -65,7 +65,8 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 			graphics.renderTooltip(font, font.split(statusDetail(), 220), mouseX, mouseY);
 		}
 		if (mouseX >= leftPos && mouseX < leftPos + 65 && mouseY >= topPos + 138 && mouseY < topPos + 204) {
-			graphics.renderTooltip(font, font.split(Component.translatable(housingKey() + ".tooltip"), 220), mouseX, mouseY);
+			String key = menu.isCashRegister() ? "ftbteams.enclosure.working_minion.tooltip" : housingKey() + ".tooltip";
+			graphics.renderTooltip(font, font.split(Component.translatable(key), 220), mouseX, mouseY);
 		}
 		if (mouseX >= leftPos + 130 && mouseX < leftPos + 145 && mouseY >= topPos + 96 && mouseY < topPos + 109
 				&& (previewRenderer.isSimplified() || previewRenderer.isTruncated())) {
@@ -82,7 +83,8 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 		panel(graphics, 0, 35, 120, 102, 0xFFEC7137, 0xFF713C27);
 		panel(graphics, 124, 0, 196, 137, 0xFF36A45F, 0xFF082E22);
 		panel(graphics, 68, 138, 184, 100, 0xFF77797C, 0xFF303235);
-		panel(graphics, 0, 138, 65, 66, 0xFF36A45F, 0xFF082E22);
+		panel(graphics, 0, 138, 65, 66, menu.isCashRegister() ? 0xFF4F86B8 : 0xFF36A45F,
+				menu.isCashRegister() ? 0xFF102D45 : 0xFF082E22);
 		if (menu.hasStorage()) {
 			for (int slot = 0; slot < EnclosureBlock.STORAGE_SIZE; slot++) {
 				drawSlot(graphics, EnclosureMenu.STORAGE_X + slot % 5 * 18, EnclosureMenu.storageY(slot), 0xFF725545);
@@ -131,9 +133,14 @@ public class EnclosureScreen extends AbstractContainerScreen<EnclosureMenu> {
 			graphics.pose().popPose();
 		}
 		graphics.drawString(font, playerInventoryTitle, EnclosureMenu.PLAYER_X, 141, 0xFFDDDDDD);
-		graphics.drawCenteredString(font, Component.translatable("entity.ftbteams.minion"), 32, 146, 0xFFD7F4DF);
-		graphics.drawWordWrap(font, Component.translatable(housingKey()), 7, 161, 51,
-				menu.getHousingStatus() == MinionHousing.Status.ASSIGNED ? 0xFF68EE77 : 0xFFFFD1A6);
+		if (menu.isCashRegister()) {
+			graphics.drawCenteredString(font, Component.translatable("ftbteams.enclosure.working_minion"), 32, 146, 0xFFB9D9FF);
+			graphics.drawCenteredString(font, Component.translatable("ftbteams.enclosure.working_minion_count", menu.getWorkingMinions()), 32, 166, 0xFFB9D9FF);
+		} else {
+			graphics.drawCenteredString(font, Component.translatable("entity.ftbteams.minion"), 32, 146, 0xFFD7F4DF);
+			graphics.drawWordWrap(font, Component.translatable(housingKey()), 7, 161, 51,
+					menu.getHousingStatus() == MinionHousing.Status.ASSIGNED ? 0xFF68EE77 : 0xFFFFD1A6);
+		}
 	}
 
 	private String housingKey() {

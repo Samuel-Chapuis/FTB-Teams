@@ -24,6 +24,7 @@ import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
+import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
@@ -74,11 +75,16 @@ public class FTBTeams {
 	public static final RegistrySupplier<EntityType<MinionEntity>> MINION = ENTITY_TYPES.register(FTBTeamsAPI.rl("minion"),
 			() -> EntityType.Builder.of(MinionEntity::new, MobCategory.CREATURE).sized(0.5F, 1.3F).eyeHeight(1.17F)
 					.clientTrackingRange(8).build(FTBTeamsAPI.rl("minion").toString()));
+	public static final RegistrySupplier<CashRegisterBlock> CASH_REGISTER = BLOCKS.register(FTBTeamsAPI.rl("cash_register"),
+			() -> new CashRegisterBlock(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL)
+					.strength(2.5F).sound(SoundType.METAL).noOcclusion()));
 	public static final Map<DyeColor, RegistrySupplier<PopBedBlock>> POP_BEDS = registerPopBeds();
 	public static final Map<DyeColor, RegistrySupplier<Item>> POP_BED_ITEMS = registerPopBedItems();
 	// Preserve the existing cyan registry ID and aliases for placed beds and saved inventories.
 	public static final RegistrySupplier<PopBedBlock> POP_BED = POP_BEDS.get(DyeColor.CYAN);
 	public static final RegistrySupplier<Item> POP_BED_ITEM = POP_BED_ITEMS.get(DyeColor.CYAN);
+	public static final RegistrySupplier<Item> CASH_REGISTER_ITEM = ITEMS.register(FTBTeamsAPI.rl("cash_register"),
+			() -> new BlockItem(CASH_REGISTER.get(), new Item.Properties()));
 	public static final RegistrySupplier<Item> TEAMS_ICON = ITEMS.register(FTBTeamsAPI.rl("teams_icon"),
 			() -> new Item(new Item.Properties()));
 	public static final Registrar<CreativeModeTab> CREATIVE_TABS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.CREATIVE_MODE_TAB);
@@ -89,11 +95,12 @@ public class FTBTeams {
 						for (DyeColor color : DyeColor.values()) {
 							output.accept(POP_BED_ITEMS.get(color).get());
 						}
+						output.accept(CASH_REGISTER_ITEM.get());
 					})));
 	public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK_ENTITY_TYPE);
 	public static final RegistrySupplier<BlockEntityType<EnclosureBlockEntity>> ENCLOSURE_BLOCK_ENTITY = BLOCK_ENTITIES.register(
 			FTBTeamsAPI.rl("enclosure"), () -> BlockEntityType.Builder.of(EnclosureBlockEntity::new,
-					POP_BEDS.values().stream().map(RegistrySupplier::get).toArray(Block[]::new)).build(null));
+					validEnclosureBlocks()).build(null));
 	public static final Registrar<MenuType<?>> MENUS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.MENU);
 	public static final RegistrySupplier<MenuType<EnclosureMenu>> ENCLOSURE_MENU = MENUS.register(
 			FTBTeamsAPI.rl("enclosure"), () -> MenuRegistry.ofExtended(EnclosureMenu::new));
@@ -124,6 +131,14 @@ public class FTBTeams {
 
 	private static String popBedId(DyeColor color) {
 		return color == DyeColor.CYAN ? "pop_bed" : color.getName() + "_pop_bed";
+	}
+
+	private static Block[] validEnclosureBlocks() {
+		Block[] beds = POP_BEDS.values().stream().map(RegistrySupplier::get).toArray(Block[]::new);
+		Block[] blocks = new Block[beds.length + 1];
+		blocks[0] = CASH_REGISTER.get();
+		System.arraycopy(beds, 0, blocks, 1, beds.length);
+		return blocks;
 	}
 
 	private static Map<DyeColor, RegistrySupplier<PopBedBlock>> registerPopBeds() {

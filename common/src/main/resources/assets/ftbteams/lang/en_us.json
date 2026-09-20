@@ -184,6 +184,9 @@
   "ftbteams.enclosure.housing.spawn_failed.tooltip": "The minion could not be spawned. You can check again.",
   "ftbteams.enclosure.housing.invalid_room": "Check room",
   "ftbteams.enclosure.housing.invalid_room.tooltip": "The room must be sealed and both halves of the Pop Bed must be present.",
+  "ftbteams.enclosure.working_minion": "Working Minion",
+  "ftbteams.enclosure.working_minion_count": "%s / 1",
+  "ftbteams.enclosure.working_minion.tooltip": "A faction minion assigned to this cash register works here during the day.",
   "ftbteams.minion.access_denied": "This minion belongs to another faction.",
   "ftbteams.minion.faction": "Faction:",
   "ftbteams.minion.faction_none": "Not defined",
@@ -192,5 +195,6 @@
   "ftbteams.minion.resting": "Resting",
   "ftbteams.minion.awake": "Awake",
   "ftbteams.minion.change_skin": "Change skin",
-  "ftbteams.minion.change_skin_tooltip": "Skin selection will be added with minion jobs and equipment."
+  "ftbteams.minion.change_skin_tooltip": "Skin selection will be added with minion jobs and equipment.",
+  "block.ftbteams.cash_register": "Cash Register"
 }

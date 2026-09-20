@@ -134,6 +134,15 @@ la fermeture reste une vérification manuelle, nécessaire à la création.
 Les niveaux de faction et limites de claims ne dépendent pas encore de
 cette population. Les entités ne sont pas incluses dans l'aperçu 3D.
 
+La **Cash Register** est le premier bloc métier basé sur `EnclosureBlock`.
+Le modèle fourni a été normalisé en `cash_register.json` pour respecter les
+identifiants de ressources Minecraft ; il contient directement toute la
+géométrie du modèle, sans fichier relais. Il utilise les textures personnalisées
+`cashier_frame` et `cashier_screen`, ainsi que les textures vanilla
+explicitement préfixées par `minecraft:block/` (et `minecraft:item/paper`).
+Elle dispose pour l'instant du stockage d'enclosure standard et apparaît dans
+l'onglet créatif FTB Teams.
+
 ## Interfaces
 
 Les interfaces liées aux constructions restent regroupées dans

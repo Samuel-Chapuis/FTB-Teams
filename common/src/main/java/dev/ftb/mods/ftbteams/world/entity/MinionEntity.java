@@ -5,6 +5,8 @@ import dev.architectury.registry.menu.MenuRegistry;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.property.TeamProperties;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
+import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
 import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
 import net.minecraft.core.BlockPos;
@@ -33,7 +35,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
@@ -45,6 +49,8 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public static final float BODY_DIVISOR = 1.75F;
 	public static final int MAX_FOOD = 3;
 	private static final EntityDataAccessor<Optional<BlockPos>> HOME = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+	private static final EntityDataAccessor<Optional<BlockPos>> WORKSTATION = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+	private static final EntityDataAccessor<String> PROFESSION = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
 	private static final EntityDataAccessor<Integer> FOOD = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.INT);
 	private UUID faction;
 	private UUID owner;
@@ -68,6 +74,8 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	protected void defineSynchedData(SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(HOME, Optional.empty());
+		builder.define(WORKSTATION, Optional.empty());
+		builder.define(PROFESSION, "");
 		builder.define(FOOD, MAX_FOOD);
 	}
 
@@ -80,6 +88,30 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 
 	public Optional<BlockPos> getHome() {
 		return entityData.get(HOME);
+	}
+
+	public Optional<BlockPos> getWorkstation() { return entityData.get(WORKSTATION); }
+
+	public boolean isWorkingAt(BlockPos pos) { return getWorkstation().filter(pos::equals).isPresent(); }
+
+	public String getProfession() { return entityData.get(PROFESSION); }
+
+	private void setProfession(BlockState state) { entityData.set(PROFESSION, state.getBlock().getDescriptionId()); }
+
+	private void setWorkstation(BlockPos pos) {
+		entityData.set(WORKSTATION, Optional.ofNullable(pos == null ? null : pos.immutable()));
+	}
+
+	private boolean validWorkstation(BlockPos pos) {
+		if (!(level() instanceof ServerLevel server) || !server.hasChunkAt(pos)
+				|| !(server.getBlockState(pos).getBlock() instanceof CashRegisterBlock)
+				|| !(server.getBlockEntity(pos) instanceof EnclosureBlockEntity enclosure)
+				|| faction == null || !faction.equals(enclosure.getFactionId())) return false;
+		return server.getEntitiesOfClass(MinionEntity.class, new AABB(pos).inflate(3.0), other -> other != this && other.isWorkingAt(pos)).isEmpty();
+	}
+
+	private BlockPos findWorkstation() {
+		return getHome().flatMap(home -> BlockPos.findClosestMatch(home, 48, 16, this::validWorkstation)).orElse(null);
 	}
 
 	public UUID getFactionId() {
@@ -131,6 +163,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		buf.writeUtf(getFactionName(), 96);
 		buf.writeInt(getFactionColor());
 		buf.writeUtf(getFactionLogo(), 8192);
+		buf.writeUtf(getProfession(), 256);
 	}
 
 	@Override
@@ -166,16 +199,17 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	protected void registerGoals() {
 		goalSelector.addGoal(0, new FloatGoal(this));
 		goalSelector.addGoal(1, new ReturnToBedGoal());
-		goalSelector.addGoal(2, new OpenDoorGoal(this, true));
-		goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(this, 1));
-		goalSelector.addGoal(4, new WaterAvoidingRandomStrollGoal(this, 0.8) {
+		goalSelector.addGoal(2, new WorkAtCashRegisterGoal());
+		goalSelector.addGoal(3, new OpenDoorGoal(this, true));
+		goalSelector.addGoal(4, new MoveTowardsRestrictionGoal(this, 1));
+		goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8) {
 			@Override public boolean canUse() { return !level().isNight() && !isResting() && super.canUse(); }
 			@Override public boolean canContinueToUse() { return !level().isNight() && !isResting() && super.canContinueToUse(); }
 		});
-		goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 6) {
+		goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6) {
 			@Override public boolean canUse() { return !isResting() && super.canUse(); }
 		});
-		goalSelector.addGoal(6, new RandomLookAroundGoal(this) {
+		goalSelector.addGoal(7, new RandomLookAroundGoal(this) {
 			@Override public boolean canUse() { return !isResting() && super.canUse(); }
 		});
 	}
@@ -208,6 +242,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public void tick() {
 		if (level() instanceof ServerLevel server) {
 			updateFood(server);
+			if (server.isNight() || getWorkstation().filter(pos -> !validWorkstation(pos)).isPresent()) setWorkstation(null);
 			if (getHome().isPresent()) {
 			BlockPos home = getHome().get();
 			if (tickCount % 20 == 0) {
@@ -260,10 +295,12 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		getHome().ifPresent(home -> tag.putLong("MinionHome", home.asLong()));
+		getWorkstation().ifPresent(pos -> tag.putLong("MinionWorkstation", pos.asLong()));
 		if (owner != null) tag.putUUID("MinionOwner", owner);
 		if (faction != null) tag.putUUID("MinionFaction", faction);
 		tag.putInt("MinionFood", getFood());
 		tag.putLong("MinionFoodDay", lastFoodDay);
+		if (!getProfession().isBlank()) tag.putString("MinionProfession", getProfession());
 		tag.putBoolean("MinionResting", isResting());
 	}
 
@@ -277,6 +314,8 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 					tag.getUUID("MinionFaction"));
 			if (tag.getBoolean("MinionResting")) restInBed(getHome().orElseThrow());
 		}
+		if (tag.contains("MinionWorkstation")) setWorkstation(BlockPos.of(tag.getLong("MinionWorkstation")));
+		if (tag.contains("MinionProfession")) entityData.set(PROFESSION, tag.getString("MinionProfession"));
 	}
 
 	private final class ReturnToBedGoal extends Goal {
@@ -306,6 +345,37 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 			} else if (--repathDelay <= 0) {
 				repathDelay = 20;
 				getNavigation().moveTo(home.getX() + 0.5, home.getY() + 1, home.getZ() + 0.5, 1);
+			}
+		}
+	}
+
+	private final class WorkAtCashRegisterGoal extends Goal {
+		private BlockPos workstation;
+		private int searchCooldown;
+		private int repathDelay;
+
+		private WorkAtCashRegisterGoal() { setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP)); }
+		@Override public boolean canUse() {
+			if (level().isNight() || isResting() || --searchCooldown > 0) return false;
+			searchCooldown = 40;
+			return (workstation = findWorkstation()) != null;
+		}
+		@Override public boolean canContinueToUse() { return !level().isNight() && !isResting() && workstation != null && (isWorkingAt(workstation) || validWorkstation(workstation)); }
+		@Override public boolean requiresUpdateEveryTick() { return true; }
+		@Override public void start() { repathDelay = 0; setWorkstation(null); }
+		@Override public void stop() { getNavigation().stop(); setWorkstation(null); workstation = null; }
+		@Override public void tick() {
+			if (workstation == null || !validWorkstation(workstation) && !isWorkingAt(workstation)) { stop(); return; }
+			Vec3 target = new Vec3(workstation.getX() + 0.5, workstation.getY() + 1, workstation.getZ() + 0.5);
+			if (position().distanceToSqr(target) < 4.0) {
+				getNavigation().stop();
+				setDeltaMovement(Vec3.ZERO);
+				setWorkstation(workstation);
+				setProfession(level().getBlockState(workstation));
+			} else if (--repathDelay <= 0) {
+				repathDelay = 20;
+				setWorkstation(null);
+				getNavigation().moveTo(target.x, target.y, target.z, 1);
 			}
 		}
 	}

@@ -38,6 +38,9 @@ public class PopBedBlock extends EnclosureBlock {
 	}
 
 	@Override
+	public boolean hasInventory() { return false; }
+
+	@Override
 	protected MapCodec<PopBedBlock> codec() {
 		return CODEC;
 	}

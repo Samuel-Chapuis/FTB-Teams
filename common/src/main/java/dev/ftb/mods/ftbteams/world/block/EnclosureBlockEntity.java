@@ -5,6 +5,7 @@ import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import dev.ftb.mods.ftbteams.world.entity.MinionHousing;
 import dev.ftb.mods.ftbteams.world.entity.MinionPopulationData;
+import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import java.util.UUID;
 
@@ -40,6 +42,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 				case 0 -> status.ordinal();
 				case 1 -> volume;
 				case 2 -> getHousingStatus().ordinal();
+				case 3 -> getWorkingMinions();
 				default -> 0;
 			};
 		}
@@ -57,7 +60,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 
 		@Override
 		public int getCount() {
-			return 3;
+			return 4;
 		}
 	};
 
@@ -111,6 +114,13 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		return preview;
 	}
 
+	public int getWorkingMinions() {
+		if (!(getBlockState().getBlock() instanceof CashRegisterBlock) || !(level instanceof ServerLevel server)) return 0;
+		int count = server.getEntitiesOfClass(MinionEntity.class,
+				new AABB(worldPosition).inflate(3.0), minion -> minion.isWorkingAt(worldPosition)).size();
+		return Math.min(1, count);
+	}
+
 	/** The player who first validated this sealed building. */
 	public UUID getOwnerId() {
 		return owner;
@@ -143,6 +153,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	public void saveExtraData(FriendlyByteBuf buf) {
 		buf.writeVarInt(getContainerSize());
 		buf.writeBlockPos(worldPosition);
+		buf.writeBoolean(getBlockState().getBlock() instanceof CashRegisterBlock);
 	}
 
 	@Override

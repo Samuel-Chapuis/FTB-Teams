@@ -104,6 +104,34 @@ pas la zone. Le résultat correspond à la dernière vérification ; il faut
 relancer le bouton après avoir modifié le bâtiment. Après rechargement du
 monde, le résultat revient à « non vérifié ».
 
+## Population et minions
+
+Le bouton **Vérifier** d'un Pop Bed crée un minion si la pièce est fermée,
+contient uniquement ce lit et offre un emplacement libre pour apparaître.
+Le joueur qui valide doit appartenir à une faction ; le minion est rattaché
+à celle-ci. Un autre Pop Bed, quelle que soit sa couleur, ou un lit vanilla
+dans le volume détecté bloque la création. Les deux moitiés ne comptent
+qu'une fois. La définition de la pièce reste celle du scanner : les portes,
+même ouvertes, séparent les volumes puisqu'elles ne sont pas de l'air.
+
+Le panneau **Minion** indique l'affectation ou le motif de refus, détaillé
+au survol. L'entité `ftbteams:minion` utilise le skin Steve vanilla : corps
+et membres divisés par 1,75, tête conservée à la taille normale du joueur.
+Elle se promène le jour à proximité de son logement et revient à pied
+dormir dans son propre lit la nuit. Elle peut ouvrir les portes en bois ;
+un chemin praticable reste nécessaire, sans téléportation à travers les murs.
+Elle se réveille à l'aube. Les minions ne font pas passer la nuit des joueurs.
+
+L'affectation lit/minion/faction est sauvegardée par dimension, indépendamment
+des chunks des entités. Revérifier, rouvrir le menu ou recharger le monde ne
+crée pas de doublon, même si le minion est momentanément déchargé.
+Casser le lit retire son minion (au rechargement si celui-ci est déchargé).
+Après la mort du minion, une nouvelle validation peut en créer un autre.
+Ouvrir un mur après validation ne supprime pas l'habitant existant :
+la fermeture reste une vérification manuelle, nécessaire à la création.
+Les niveaux de faction et limites de claims ne dépendent pas encore de
+cette population. Les entités ne sont pas incluses dans l'aperçu 3D.
+
 ## Ajouter un type de bâtiment
 
 - Hériter de `EnclosureBlock` et fournir son codec et son enregistrement.
@@ -124,6 +152,10 @@ directions, les contacts diagonaux, les deux points de départ, le volume,
 la borne de recherche, les chunks indisponibles et les coordonnées négatives.
 Les tests de géométrie vérifient les faces cachées/conservées, les intersections
 du plan de coupe, l'interpolation des UV/couleurs et la rotation de la coupe.
+Les tests de population vérifient l'unicité lit/minion, les validations
+répétées, les affectations indépendantes des chunks, la libération et le
+remplacement d'un résident. Le scanner vérifie aussi que les positions
+d'apparition proposées restent dans le volume intérieur validé.
 
 À vérifier dans un monde de test sur chaque loader :
 
@@ -143,5 +175,14 @@ du plan de coupe, l'interpolation des UV/couleurs et la rotation de la coupe.
 7. Percer un mur puis relancer la vérification : l'ancien aperçu doit disparaître
    chez tous les joueurs consultant le lit. Refermer et revérifier pour le recréer.
 
-La capacité des maisons, les minions et les effets sur les factions
-seront ajoutés dans les étapes suivantes.
+8. Rejoindre une faction et vérifier une maison avec un seul Pop Bed :
+   un minion apparaît, le panneau affiche 1 / 1. Revérifier plusieurs fois,
+   recharger le monde et décharger le chunk du minion : aucun doublon.
+9. Essayer une maison ouverte, deux Pop Beds de couleurs différentes,
+   un Pop Bed et un lit vanilla, puis une validation sans faction :
+   aucune nouvelle apparition, avec le motif indiqué dans l'interface.
+10. Utiliser `/time set day`, puis `/time set night`, avec une porte en bois
+    accessible : observer la promenade, le retour et la pose couchée dans
+    les quatre orientations. Revenir au jour pour vérifier le réveil.
+11. Casser le lit : son minion disparaît. Tuer un minion puis revérifier
+    son lit intact : un seul remplaçant apparaît.

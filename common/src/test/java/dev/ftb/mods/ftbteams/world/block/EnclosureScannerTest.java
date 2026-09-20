@@ -15,6 +15,10 @@ public final class EnclosureScannerTest {
 		Result closed = scan(ORIGIN, SEEDS, 15, EnclosureScannerTest::room);
 		expect(closed.status() == Status.SEALED && closed.volume() == 27, "Closed 3x3x3 room has 27 air blocks");
 		expect(closed.boundary().size() == 54, "Preview contains precisely the six inner boundary surfaces");
+		expect(closed.interior().size() == 27 && closed.interior().stream().allMatch(p -> room(p) == Cell.AIR
+				&& Math.abs(p.x()) < 2 && Math.abs(p.z()) < 2 && p.y() > 0 && p.y() < 4),
+				"Spawn candidates contain only air inside the validated house");
+		expect(scan(ORIGIN, SEEDS, 15, p -> Cell.AIR).interior().isEmpty(), "An open room offers no spawn candidates");
 		expect(closed.boundary().contains(new Position(0, 0, 0)) && closed.boundary().contains(new Position(0, 4, 0)),
 				"Preview includes floor and roof for cutaway rendering");
 		expect(!closed.boundary().contains(new Position(0, 1, 0)) && !closed.boundary().contains(new Position(5, 1, 0)),

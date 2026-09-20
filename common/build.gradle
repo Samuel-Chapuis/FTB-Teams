@@ -29,6 +29,18 @@ tasks.register('enclosureScannerTest', JavaExec) {
 tasks.named('check') {
 	dependsOn enclosureScannerTest
 	dependsOn 'enclosurePreviewTest'
+	dependsOn 'minionAssignmentsTest'
+}
+
+tasks.register('minionAssignmentsTest', JavaExec) {
+	group = 'verification'
+	description = 'Verify persistent one-bed/one-minion assignment invariants.'
+	dependsOn testClasses
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'dev.ftb.mods.ftbteams.world.entity.MinionAssignmentsTest'
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 tasks.register('enclosurePreviewTest', JavaExec) {

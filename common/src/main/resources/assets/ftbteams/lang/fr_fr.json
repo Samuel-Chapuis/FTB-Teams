@@ -148,5 +148,22 @@
 	"block.ftbteams.brown_pop_bed": "Pop Bed marron",
 	"block.ftbteams.green_pop_bed": "Pop Bed vert",
 	"block.ftbteams.red_pop_bed": "Pop Bed rouge",
-	"block.ftbteams.black_pop_bed": "Pop Bed noir"
+	"block.ftbteams.black_pop_bed": "Pop Bed noir",
+  "entity.ftbteams.minion": "Minion",
+  "ftbteams.enclosure.housing.none": "0 / 1",
+  "ftbteams.enclosure.housing.none.tooltip": "Vérifiez une pièce fermée contenant un seul lit pour accueillir un minion de votre faction.",
+  "ftbteams.enclosure.housing.assigned": "1 / 1",
+  "ftbteams.enclosure.housing.assigned.tooltip": "Un minion de faction est lié à ce lit. Il se promène le jour et revient dormir la nuit.",
+  "ftbteams.enclosure.housing.multiple_beds": "Lit en trop",
+  "ftbteams.enclosure.housing.multiple_beds.tooltip": "Cette pièce contient un autre lit (Pop Bed ou lit vanilla). Il faut un seul lit par maison.",
+  "ftbteams.enclosure.housing.no_faction": "Pas de faction",
+  "ftbteams.enclosure.housing.no_faction.tooltip": "Rejoignez ou créez une faction avant de valider ce logement.",
+  "ftbteams.enclosure.housing.other_faction": "Autre faction",
+  "ftbteams.enclosure.housing.other_faction.tooltip": "Ce lit est déjà attribué au minion d'une autre faction.",
+  "ftbteams.enclosure.housing.no_space": "Pas de place",
+  "ftbteams.enclosure.housing.no_space.tooltip": "Aucun emplacement libre et sûr dans la pièce pour faire apparaître le minion.",
+  "ftbteams.enclosure.housing.spawn_failed": "Échec",
+  "ftbteams.enclosure.housing.spawn_failed.tooltip": "La création du minion a échoué. Vous pouvez relancer la vérification.",
+  "ftbteams.enclosure.housing.invalid_room": "À vérifier",
+  "ftbteams.enclosure.housing.invalid_room.tooltip": "La pièce doit être fermée et les deux moitiés du Pop Bed doivent être présentes."
 }

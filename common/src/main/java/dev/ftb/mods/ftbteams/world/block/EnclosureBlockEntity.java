@@ -3,6 +3,10 @@ package dev.ftb.mods.ftbteams.world.block;
 import dev.architectury.registry.menu.ExtendedMenuProvider;
 import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
+import dev.ftb.mods.ftbteams.world.entity.MinionHousing;
+import dev.ftb.mods.ftbteams.world.entity.MinionPopulationData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -22,26 +26,34 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	private NonNullList<ItemStack> items;
 	private EnclosureScanner.Status status = EnclosureScanner.Status.UNCHECKED;
 	private int volume;
+	private MinionHousing.Status housingStatus = MinionHousing.Status.NONE;
 	private EnclosurePreview preview = EnclosurePreview.EMPTY;
 	private long nextCheckTick;
 	private final ContainerData data = new ContainerData() {
 		@Override
 		public int get(int index) {
-			return index == 0 ? status.ordinal() : volume;
+			return switch (index) {
+				case 0 -> status.ordinal();
+				case 1 -> volume;
+				case 2 -> getHousingStatus().ordinal();
+				default -> 0;
+			};
 		}
 
 		@Override
 		public void set(int index, int value) {
 			if (index == 0) {
 				status = EnclosureScanner.Status.values()[value];
-			} else {
+			} else if (index == 1) {
 				volume = value;
+			} else if (index == 2) {
+				housingStatus = MinionHousing.Status.values()[value];
 			}
 		}
 
 		@Override
 		public int getCount() {
-			return 2;
+			return 3;
 		}
 	};
 
@@ -58,7 +70,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 				? EnclosureBlock.STORAGE_SIZE : 0, ItemStack.EMPTY);
 	}
 
-	public boolean checkEnclosure() {
+	public boolean checkEnclosure(ServerPlayer player) {
 		if (level == null || level.isClientSide || level.getGameTime() < nextCheckTick) {
 			return false;
 		}
@@ -75,7 +87,17 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		status = result.status();
 		volume = result.volume();
 		preview = EnclosurePreview.capture(level, worldPosition, result);
+		if (getBlockState().getBlock() instanceof PopBedBlock) {
+			housingStatus = MinionHousing.validate((ServerLevel) level, worldPosition, player, result);
+		}
 		return true;
+	}
+
+	private MinionHousing.Status getHousingStatus() {
+		if (level instanceof ServerLevel server && (housingStatus == MinionHousing.Status.NONE || housingStatus == MinionHousing.Status.ASSIGNED)) {
+			return MinionPopulationData.get(server).resident(worldPosition) != null ? MinionHousing.Status.ASSIGNED : MinionHousing.Status.NONE;
+		}
+		return housingStatus;
 	}
 
 	public EnclosurePreview getPreview() {
@@ -130,6 +152,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		ContainerHelper.loadAllItems(tag, items, registries);
 		// A scan is a snapshot, not proof that the building is still closed after a reload.
 		status = EnclosureScanner.Status.UNCHECKED;
+		housingStatus = MinionHousing.Status.NONE;
 		volume = 0;
 		preview = EnclosurePreview.EMPTY;
 	}

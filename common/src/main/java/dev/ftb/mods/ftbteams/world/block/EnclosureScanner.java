@@ -19,9 +19,9 @@ public final class EnclosureScanner {
 			return new Position(this.x + x, this.y + y, this.z + z);
 		}
 	}
-	public record Result(Status status, int volume, Set<Position> boundary) {
+	public record Result(Status status, int volume, Set<Position> boundary, Set<Position> interior) {
 		public Result(Status status, int volume) {
-			this(status, volume, Set.of());
+			this(status, volume, Set.of(), Set.of());
 		}
 	}
 	@FunctionalInterface
@@ -35,6 +35,7 @@ public final class EnclosureScanner {
 		}
 		Set<Position> visited = new HashSet<>();
 		Set<Position> boundary = new HashSet<>();
+		Set<Position> interior = new HashSet<>();
 		ArrayDeque<Position> pending = new ArrayDeque<>(seeds);
 		int volume = 0;
 		while (!pending.isEmpty()) {
@@ -50,6 +51,7 @@ public final class EnclosureScanner {
 				return new Result(Status.UNAVAILABLE, 0);
 			}
 			if (cell == Cell.AIR) {
+				interior.add(pos);
 				volume++;
 				for (int[] direction : DIRECTIONS) {
 					pending.addLast(pos.offset(direction[0], direction[1], direction[2]));
@@ -58,6 +60,6 @@ public final class EnclosureScanner {
 				boundary.add(pos);
 			}
 		}
-		return volume == 0 ? new Result(Status.NO_INTERIOR, 0) : new Result(Status.SEALED, volume, Set.copyOf(boundary));
+		return volume == 0 ? new Result(Status.NO_INTERIOR, 0) : new Result(Status.SEALED, volume, Set.copyOf(boundary), Set.copyOf(interior));
 	}
 }

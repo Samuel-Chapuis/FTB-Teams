@@ -27,6 +27,10 @@ import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import dev.architectury.registry.menu.MenuRegistry;
+import dev.architectury.registry.level.entity.EntityAttributeRegistry;
+import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrarManager;
@@ -65,6 +69,10 @@ public class FTBTeams {
 	public static final Logger LOGGER = LogManager.getLogger(FTBTeamsAPI.MOD_NAME);
 	public static final Registrar<Block> BLOCKS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK);
 	public static final Registrar<Item> ITEMS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.ITEM);
+	public static final Registrar<EntityType<?>> ENTITY_TYPES = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.ENTITY_TYPE);
+	public static final RegistrySupplier<EntityType<MinionEntity>> MINION = ENTITY_TYPES.register(FTBTeamsAPI.rl("minion"),
+			() -> EntityType.Builder.of(MinionEntity::new, MobCategory.CREATURE).sized(0.5F, 1.3F).eyeHeight(1.17F)
+					.clientTrackingRange(8).build(FTBTeamsAPI.rl("minion").toString()));
 	public static final Map<DyeColor, RegistrySupplier<PopBedBlock>> POP_BEDS = registerPopBeds();
 	public static final Map<DyeColor, RegistrySupplier<Item>> POP_BED_ITEMS = registerPopBedItems();
 	// Preserve the existing cyan registry ID and aliases for placed beds and saved inventories.
@@ -91,6 +99,7 @@ public class FTBTeams {
 
 	public FTBTeams() {
 		FTBTeamsAPI._init(FTBTeamsAPIImpl.INSTANCE);
+		EntityAttributeRegistry.register(MINION, MinionEntity::createAttributes);
 
 		LifecycleEvent.SERVER_BEFORE_START.register(this::serverAboutToStart);
 		LifecycleEvent.SERVER_STARTED.register(this::serverStarted);

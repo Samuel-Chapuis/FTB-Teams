@@ -1,6 +1,8 @@
 package dev.ftb.mods.ftbteams.world.block;
 
 import com.mojang.serialization.MapCodec;
+import dev.ftb.mods.ftbteams.world.entity.MinionPopulationData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.LivingEntity;
@@ -109,6 +111,14 @@ public class PopBedBlock extends EnclosureBlock {
 	@Override
 	protected RenderShape getRenderShape(BlockState state) {
 		return RenderShape.MODEL;
+	}
+
+	@Override
+	protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
+		if (!state.is(newState.getBlock()) && state.getValue(PART) == BedPart.HEAD && level instanceof ServerLevel server) {
+			MinionPopulationData.get(server).removeBed(server, pos);
+		}
+		super.onRemove(state, level, pos, newState, moving);
 	}
 
 	@Override

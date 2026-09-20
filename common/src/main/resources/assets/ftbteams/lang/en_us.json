@@ -166,5 +166,22 @@
 	"block.ftbteams.brown_pop_bed": "Brown Pop Bed",
 	"block.ftbteams.green_pop_bed": "Green Pop Bed",
 	"block.ftbteams.red_pop_bed": "Red Pop Bed",
-	"block.ftbteams.black_pop_bed": "Black Pop Bed"
+	"block.ftbteams.black_pop_bed": "Black Pop Bed",
+  "entity.ftbteams.minion": "Minion",
+  "ftbteams.enclosure.housing.none": "0 / 1",
+  "ftbteams.enclosure.housing.none.tooltip": "Check a sealed room containing a single bed to house a minion of your faction.",
+  "ftbteams.enclosure.housing.assigned": "1 / 1",
+  "ftbteams.enclosure.housing.assigned.tooltip": "A faction minion is assigned to this bed. It wanders during the day and returns to sleep at night.",
+  "ftbteams.enclosure.housing.multiple_beds": "Extra bed",
+  "ftbteams.enclosure.housing.multiple_beds.tooltip": "This room contains another bed (Pop Bed or vanilla bed). Only one bed is allowed per house.",
+  "ftbteams.enclosure.housing.no_faction": "No faction",
+  "ftbteams.enclosure.housing.no_faction.tooltip": "Join or create a faction before validating this home.",
+  "ftbteams.enclosure.housing.other_faction": "Other faction",
+  "ftbteams.enclosure.housing.other_faction.tooltip": "This bed already belongs to another faction's minion.",
+  "ftbteams.enclosure.housing.no_space": "No space",
+  "ftbteams.enclosure.housing.no_space.tooltip": "There is no safe, unobstructed position inside the room to spawn the minion.",
+  "ftbteams.enclosure.housing.spawn_failed": "Failed",
+  "ftbteams.enclosure.housing.spawn_failed.tooltip": "The minion could not be spawned. You can check again.",
+  "ftbteams.enclosure.housing.invalid_room": "Check room",
+  "ftbteams.enclosure.housing.invalid_room.tooltip": "The room must be sealed and both halves of the Pop Bed must be present."
 }

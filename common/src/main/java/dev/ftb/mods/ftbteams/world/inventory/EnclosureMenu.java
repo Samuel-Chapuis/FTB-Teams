@@ -4,6 +4,7 @@ import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftblibrary.util.NetworkHelper;
 import dev.ftb.mods.ftbteams.net.EnclosurePreviewMessage;
 import dev.ftb.mods.ftbteams.world.block.EnclosurePreview;
+import dev.ftb.mods.ftbteams.world.entity.MinionHousing;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
@@ -32,7 +33,7 @@ public class EnclosureMenu extends AbstractContainerMenu {
 	private EnclosurePreview lastSentPreview;
 
 	public EnclosureMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
-		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(2));
+		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(3));
 		origin = buf.readBlockPos();
 	}
 
@@ -46,7 +47,7 @@ public class EnclosureMenu extends AbstractContainerMenu {
 		if (storageSize != 0 && storageSize != EnclosureBlock.STORAGE_SIZE) {
 			throw new IllegalArgumentException("Enclosure storage must have 0 or 25 slots");
 		}
-		checkContainerDataCount(data, 2);
+		checkContainerDataCount(data, 3);
 		container.startOpen(inventory.player);
 		for (int slot = 0; slot < storageSize; slot++) {
 			addSlot(new Slot(container, slot, STORAGE_X + slot % 5 * 18, storageY(slot)));
@@ -109,10 +110,14 @@ public class EnclosureMenu extends AbstractContainerMenu {
 		return data.get(1);
 	}
 
+	public MinionHousing.Status getHousingStatus() {
+		return MinionHousing.Status.values()[data.get(2)];
+	}
+
 	@Override
 	public boolean clickMenuButton(Player player, int id) {
-		if (id == CHECK_BUTTON && !player.isSpectator() && stillValid(player)
-				&& container instanceof EnclosureBlockEntity enclosure && enclosure.checkEnclosure()) {
+		if (id == CHECK_BUTTON && player instanceof ServerPlayer serverPlayer && !player.isSpectator() && stillValid(player)
+				&& container instanceof EnclosureBlockEntity enclosure && enclosure.checkEnclosure(serverPlayer)) {
 			broadcastChanges();
 			return true;
 		}

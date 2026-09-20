@@ -183,5 +183,14 @@
   "ftbteams.enclosure.housing.spawn_failed": "Failed",
   "ftbteams.enclosure.housing.spawn_failed.tooltip": "The minion could not be spawned. You can check again.",
   "ftbteams.enclosure.housing.invalid_room": "Check room",
-  "ftbteams.enclosure.housing.invalid_room.tooltip": "The room must be sealed and both halves of the Pop Bed must be present."
+  "ftbteams.enclosure.housing.invalid_room.tooltip": "The room must be sealed and both halves of the Pop Bed must be present.",
+  "ftbteams.minion.access_denied": "This minion belongs to another faction.",
+  "ftbteams.minion.faction": "Faction:",
+  "ftbteams.minion.faction_none": "Not defined",
+  "ftbteams.minion.health": "Health",
+  "ftbteams.minion.food": "Food: %s/%s",
+  "ftbteams.minion.resting": "Resting",
+  "ftbteams.minion.awake": "Awake",
+  "ftbteams.minion.change_skin": "Change skin",
+  "ftbteams.minion.change_skin_tooltip": "Skin selection will be added with minion jobs and equipment."
 }

@@ -1,13 +1,22 @@
 package dev.ftb.mods.ftbteams.world.entity;
 
+import dev.architectury.registry.menu.ExtendedMenuProvider;
+import dev.architectury.registry.menu.MenuRegistry;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.property.TeamProperties;
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
+import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
@@ -17,6 +26,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -28,10 +41,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 /** A persistent faction resident: daytime strolls and a nightly walk back to its own Pop Bed. */
-public class MinionEntity extends PathfinderMob {
+public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider {
 	public static final float BODY_DIVISOR = 1.75F;
+	public static final int MAX_FOOD = 3;
 	private static final EntityDataAccessor<Optional<BlockPos>> HOME = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+	private static final EntityDataAccessor<Integer> FOOD = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.INT);
 	private UUID faction;
+	private UUID owner;
+	private long lastFoodDay = Long.MIN_VALUE;
 
 	public MinionEntity(EntityType<? extends MinionEntity> type, Level level) {
 		super(type, level);
@@ -51,10 +68,12 @@ public class MinionEntity extends PathfinderMob {
 	protected void defineSynchedData(SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(HOME, Optional.empty());
+		builder.define(FOOD, MAX_FOOD);
 	}
 
-	public void assignHome(BlockPos home, UUID faction) {
+	public void assignHome(BlockPos home, UUID owner, UUID faction) {
 		entityData.set(HOME, Optional.of(home.immutable()));
+		this.owner = owner;
 		this.faction = faction;
 		restrictTo(home, 24);
 	}
@@ -65,6 +84,70 @@ public class MinionEntity extends PathfinderMob {
 
 	public UUID getFactionId() {
 		return faction;
+	}
+
+	public UUID getOwnerId() {
+		return owner;
+	}
+
+	public int getFood() {
+		return entityData.get(FOOD);
+	}
+
+	/** Reserved for future food/workstation rules; the current cap is intentionally three points. */
+	public void setFood(int food) {
+		entityData.set(FOOD, Math.clamp(food, 0, MAX_FOOD));
+	}
+
+	/** The owner and every current member of the owner's faction can interact with this minion. */
+	public boolean canAccess(ServerPlayer player) {
+		return owner == null || owner.equals(player.getUUID())
+				|| (faction != null && EnclosureBlock.getPlayerFaction(player).filter(faction::equals).isPresent());
+	}
+
+	public String getFactionName() {
+		return faction == null ? "" : FTBTeamsAPI.api().getManager().getTeamByID(faction)
+				.map(team -> team.getName().getString()).orElse("");
+	}
+
+	public int getFactionColor() {
+		return faction == null ? 0xFF333333 : FTBTeamsAPI.api().getManager().getTeamByID(faction)
+				.map(team -> team.getProperty(TeamProperties.COLOR).rgb()).orElse(0xFF333333);
+	}
+
+	public String getFactionLogo() {
+		return faction == null ? "" : FTBTeamsAPI.api().getManager().getTeamByID(faction)
+				.map(team -> team.getProperty(TeamProperties.FACTION_LOGO)).orElse("");
+	}
+
+	@Override
+	public Component getDisplayName() {
+		return Component.translatable("entity.ftbteams.minion");
+	}
+
+	@Override
+	public void saveExtraData(FriendlyByteBuf buf) {
+		buf.writeVarInt(getId());
+		buf.writeUtf(getFactionName(), 96);
+		buf.writeInt(getFactionColor());
+		buf.writeUtf(getFactionLogo(), 8192);
+	}
+
+	@Override
+	public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+		return new MinionMenu(id, inventory, this);
+	}
+
+	@Override
+	protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+		if (player instanceof ServerPlayer serverPlayer) {
+			if (!canAccess(serverPlayer)) {
+				player.displayClientMessage(Component.translatable("ftbteams.minion.access_denied"), true);
+				return InteractionResult.FAIL;
+			}
+			MenuRegistry.openExtendedMenu(serverPlayer, this);
+		}
+		return InteractionResult.sidedSuccess(level().isClientSide);
 	}
 
 	public static boolean isHomeBed(Level level, BlockPos pos) {
@@ -123,7 +206,9 @@ public class MinionEntity extends PathfinderMob {
 
 	@Override
 	public void tick() {
-		if (level() instanceof ServerLevel server && getHome().isPresent()) {
+		if (level() instanceof ServerLevel server) {
+			updateFood(server);
+			if (getHome().isPresent()) {
 			BlockPos home = getHome().get();
 			if (tickCount % 20 == 0) {
 				var assignment = MinionPopulationData.get(server).resident(home);
@@ -134,9 +219,22 @@ public class MinionEntity extends PathfinderMob {
 				}
 			}
 			if (isResting() && (!server.isNight() || isInWaterOrBubble())) wakeUp();
+			}
 		}
 		super.tick();
 		if (!level().isClientSide && isAlive() && isResting()) getHome().ifPresent(this::restInBed);
+	}
+
+	private void updateFood(ServerLevel level) {
+		long day = level.getDayTime() / 24000L;
+		if (lastFoodDay == Long.MIN_VALUE || day < lastFoodDay) {
+			lastFoodDay = day;
+			return;
+		}
+		if (day > lastFoodDay) {
+			setFood(getFood() - (int) Math.min(day - lastFoodDay, MAX_FOOD));
+			lastFoodDay = day;
+		}
 	}
 
 	@Override
@@ -162,15 +260,21 @@ public class MinionEntity extends PathfinderMob {
 	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		getHome().ifPresent(home -> tag.putLong("MinionHome", home.asLong()));
+		if (owner != null) tag.putUUID("MinionOwner", owner);
 		if (faction != null) tag.putUUID("MinionFaction", faction);
+		tag.putInt("MinionFood", getFood());
+		tag.putLong("MinionFoodDay", lastFoodDay);
 		tag.putBoolean("MinionResting", isResting());
 	}
 
 	@Override
 	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
+		setFood(tag.contains("MinionFood") ? tag.getInt("MinionFood") : MAX_FOOD);
+		lastFoodDay = tag.contains("MinionFoodDay") ? tag.getLong("MinionFoodDay") : Long.MIN_VALUE;
 		if (tag.contains("MinionHome") && tag.hasUUID("MinionFaction")) {
-			assignHome(BlockPos.of(tag.getLong("MinionHome")), tag.getUUID("MinionFaction"));
+			assignHome(BlockPos.of(tag.getLong("MinionHome")), tag.hasUUID("MinionOwner") ? tag.getUUID("MinionOwner") : null,
+					tag.getUUID("MinionFaction"));
 			if (tag.getBoolean("MinionResting")) restInBed(getHome().orElseThrow());
 		}
 	}

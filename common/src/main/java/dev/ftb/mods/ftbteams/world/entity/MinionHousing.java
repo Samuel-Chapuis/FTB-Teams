@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbteams.world.entity;
 import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.world.block.EnclosureScanner;
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 public final class MinionHousing {
 	public enum Status { NONE, ASSIGNED, MULTIPLE_BEDS, NO_FACTION, OTHER_FACTION, NO_SPACE, SPAWN_FAILED, INVALID_ROOM }
@@ -44,8 +46,10 @@ public final class MinionHousing {
 		MinionEntity minion = FTBTeams.MINION.get().create(level);
 		if (minion == null) return Status.SPAWN_FAILED;
 		if (!placeInside(level, home, room, minion)) return Status.NO_SPACE;
-		minion.assignHome(home, team.getTeamId());
-		if (!population.claim(home, minion.getUUID(), team.getTeamId())) return Status.ASSIGNED;
+		UUID owner = level.getBlockEntity(home) instanceof EnclosureBlockEntity enclosure && enclosure.getOwnerId() != null
+				? enclosure.getOwnerId() : player.getUUID();
+		minion.assignHome(home, owner, team.getTeamId());
+		if (!population.claim(home, minion.getUUID(), owner, team.getTeamId())) return Status.ASSIGNED;
 		if (!level.addFreshEntity(minion)) {
 			population.release(home, minion.getUUID());
 			return Status.SPAWN_FAILED;

@@ -108,8 +108,10 @@ monde, le résultat revient à « non vérifié ».
 
 Le bouton **Vérifier** d'un Pop Bed crée un minion si la pièce est fermée,
 contient uniquement ce lit et offre un emplacement libre pour apparaître.
-Le joueur qui valide doit appartenir à une faction ; le minion est rattaché
-à celle-ci. Un autre Pop Bed, quelle que soit sa couleur, ou un lit vanilla
+Le joueur qui valide doit appartenir à une faction ; le Pop Bed devient la
+propriété de ce joueur et de sa faction, et le minion conserve les deux
+identifiants. Les autres membres de cette faction peuvent ouvrir le bâtiment
+et consulter le minion ; les autres factions n'y ont pas accès. Un autre Pop Bed, quelle que soit sa couleur, ou un lit vanilla
 dans le volume détecté bloque la création. Les deux moitiés ne comptent
 qu'une fois. La définition de la pièce reste celle du scanner : les portes,
 même ouvertes, séparent les volumes puisqu'elles ne sont pas de l'air.
@@ -122,7 +124,7 @@ dormir dans son propre lit la nuit. Elle peut ouvrir les portes en bois ;
 un chemin praticable reste nécessaire, sans téléportation à travers les murs.
 Elle se réveille à l'aube. Les minions ne font pas passer la nuit des joueurs.
 
-L'affectation lit/minion/faction est sauvegardée par dimension, indépendamment
+L'affectation lit/minion/propriétaire/faction est sauvegardée par dimension, indépendamment
 des chunks des entités. Revérifier, rouvrir le menu ou recharger le monde ne
 crée pas de doublon, même si le minion est momentanément déchargé.
 Casser le lit retire son minion (au rechargement si celui-ci est déchargé).
@@ -131,6 +133,28 @@ Ouvrir un mur après validation ne supprime pas l'habitant existant :
 la fermeture reste une vérification manuelle, nécessaire à la création.
 Les niveaux de faction et limites de claims ne dépendent pas encore de
 cette population. Les entités ne sont pas incluses dans l'aperçu 3D.
+
+## Interfaces
+
+Les interfaces liées aux constructions restent regroupées dans
+`client/gui/EnclosureScreen` et son renderer d'aperçu. Le menu serveur associé
+est `world/inventory/EnclosureMenu` : il contient le stockage, l'état de la
+vérification et les données du panneau Minion.
+
+L'interface du minion est isolée dans `client/gui/minion/MinionScreen`, avec
+son contrat serveur dans `world/inventory/MinionMenu`. Un clic droit sur un
+minion de sa faction ouvre ce profil. La zone grise affiche le logo et le
+nom de la faction, la zone orange affiche ses points de vie, une jauge de
+nourriture de trois points et la grille prévue
+pour son futur inventaire de travail, et la zone verte rend l'entité 3D qui suit
+le curseur. Le bouton **Changer le skin** est présent mais désactivé : aucun
+catalogue ou choix de skins n'est encore défini. La grille est donc illustrative
+à ce stade et ne stocke pas encore d'objets.
+
+Un minion apparaît avec ses trois points de nourriture. Il perd un point à
+chaque journée Minecraft complète, y compris les jours passés alors que son
+chunk était déchargé ; la jauge reste à zéro une fois vide. La consommation et
+les effets de la faim seront reliés au futur inventaire et aux métiers.
 
 ## Ajouter un type de bâtiment
 

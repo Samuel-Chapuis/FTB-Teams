@@ -165,5 +165,14 @@
   "ftbteams.enclosure.housing.spawn_failed": "Échec",
   "ftbteams.enclosure.housing.spawn_failed.tooltip": "La création du minion a échoué. Vous pouvez relancer la vérification.",
   "ftbteams.enclosure.housing.invalid_room": "À vérifier",
-  "ftbteams.enclosure.housing.invalid_room.tooltip": "La pièce doit être fermée et les deux moitiés du Pop Bed doivent être présentes."
+  "ftbteams.enclosure.housing.invalid_room.tooltip": "La pièce doit être fermée et les deux moitiés du Pop Bed doivent être présentes.",
+  "ftbteams.minion.access_denied": "Ce minion appartient à une autre faction.",
+  "ftbteams.minion.faction": "Faction :",
+  "ftbteams.minion.faction_none": "Non définie",
+  "ftbteams.minion.health": "Santé",
+  "ftbteams.minion.food": "Nourriture : %s/%s",
+  "ftbteams.minion.resting": "Au lit",
+  "ftbteams.minion.awake": "Éveillé",
+  "ftbteams.minion.change_skin": "Changer le skin",
+  "ftbteams.minion.change_skin_tooltip": "La sélection des skins sera ajoutée avec les métiers et l'équipement du minion."
 }

@@ -26,6 +26,7 @@ import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
+import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
 import dev.architectury.registry.menu.MenuRegistry;
 import dev.architectury.registry.level.entity.EntityAttributeRegistry;
 import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
@@ -96,6 +97,8 @@ public class FTBTeams {
 	public static final Registrar<MenuType<?>> MENUS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.MENU);
 	public static final RegistrySupplier<MenuType<EnclosureMenu>> ENCLOSURE_MENU = MENUS.register(
 			FTBTeamsAPI.rl("enclosure"), () -> MenuRegistry.ofExtended(EnclosureMenu::new));
+	public static final RegistrySupplier<MenuType<MinionMenu>> MINION_MENU = MENUS.register(
+			FTBTeamsAPI.rl("minion"), () -> MenuRegistry.ofExtended(MinionMenu::new));
 
 	public FTBTeams() {
 		FTBTeamsAPI._init(FTBTeamsAPIImpl.INSTANCE);

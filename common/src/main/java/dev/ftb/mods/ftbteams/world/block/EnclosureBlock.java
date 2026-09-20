@@ -1,6 +1,7 @@
 package dev.ftb.mods.ftbteams.world.block;
 
 import dev.architectury.registry.menu.MenuRegistry;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
@@ -15,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /** Shared interaction, storage and enclosure rules for building controller blocks. */
 public abstract class EnclosureBlock extends BaseEntityBlock {
@@ -43,6 +46,22 @@ public abstract class EnclosureBlock extends BaseEntityBlock {
 		return List.of(pos.above());
 	}
 
+	/** Returns the party faction currently associated with a player, if they belong to one. */
+	public static Optional<UUID> getPlayerFaction(ServerPlayer player) {
+		return FTBTeamsAPI.api().getManager().getTeamForPlayer(player)
+				.filter(team -> team.isPartyTeam()).map(team -> team.getTeamId());
+	}
+
+	/** Building types share faction access; the controller stores the persistent owner and faction IDs. */
+	public boolean canAccess(EnclosureBlockEntity enclosure, ServerPlayer player) {
+		return enclosure.canAccess(player);
+	}
+
+	/** Claims an unowned sealed building for a faction player. Existing faction members retain access. */
+	public boolean claimOwnership(EnclosureBlockEntity enclosure, ServerPlayer player) {
+		return enclosure.claimOwnership(player, getPlayerFaction(player).orElse(null));
+	}
+
 	@Override
 	protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
 		return level.getBlockEntity(getControllerPos(state, pos)) instanceof EnclosureBlockEntity enclosure ? enclosure : null;
@@ -52,7 +71,7 @@ public abstract class EnclosureBlock extends BaseEntityBlock {
 	protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
 		if (player instanceof ServerPlayer serverPlayer
 				&& level.getBlockEntity(getControllerPos(state, pos)) instanceof EnclosureBlockEntity enclosure
-				&& enclosure.canOpen(player)) {
+				&& enclosure.canOpen(player) && canAccess(enclosure, serverPlayer)) {
 			MenuRegistry.openExtendedMenu(serverPlayer, enclosure);
 		}
 		return InteractionResult.sidedSuccess(level.isClientSide);

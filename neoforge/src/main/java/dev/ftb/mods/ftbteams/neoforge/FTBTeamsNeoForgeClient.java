@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbteams.neoforge;
 import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.client.gui.EnclosureScreen;
+import dev.ftb.mods.ftbteams.client.gui.minion.MinionScreen;
 import dev.ftb.mods.ftbteams.client.entity.MinionRenderer;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.api.distmarker.Dist;
@@ -20,6 +21,7 @@ public class FTBTeamsNeoForgeClient {
 	@SubscribeEvent
 	public static void registerScreens(RegisterMenuScreensEvent event) {
 		event.register(FTBTeams.ENCLOSURE_MENU.get(), EnclosureScreen::new);
+		event.register(FTBTeams.MINION_MENU.get(), MinionScreen::new);
 	}
 
 }

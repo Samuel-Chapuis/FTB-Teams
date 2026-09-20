@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /** One-to-one home/resident ledger. An unloaded resident still owns its home. */
 public final class MinionAssignments {
-	public record Resident(UUID minion, UUID faction) {
+	public record Resident(UUID minion, UUID owner, UUID faction) {
 	}
 
 	private final Map<Long, Resident> homes = new HashMap<>();
@@ -16,9 +16,9 @@ public final class MinionAssignments {
 		return homes.get(home);
 	}
 
-	public boolean claim(long home, UUID minion, UUID faction) {
+	public boolean claim(long home, UUID minion, UUID owner, UUID faction) {
 		if (homes.containsKey(home) || residents.containsKey(minion)) return false;
-		homes.put(home, new Resident(minion, faction));
+		homes.put(home, new Resident(minion, owner, faction));
 		residents.put(minion, home);
 		return true;
 	}

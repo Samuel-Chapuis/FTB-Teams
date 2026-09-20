@@ -22,12 +22,16 @@ import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.UUID;
+
 public class EnclosureBlockEntity extends BaseContainerBlockEntity implements ExtendedMenuProvider {
 	private NonNullList<ItemStack> items;
 	private EnclosureScanner.Status status = EnclosureScanner.Status.UNCHECKED;
 	private int volume;
 	private MinionHousing.Status housingStatus = MinionHousing.Status.NONE;
 	private EnclosurePreview preview = EnclosurePreview.EMPTY;
+	private UUID owner;
+	private UUID faction;
 	private long nextCheckTick;
 	private final ContainerData data = new ContainerData() {
 		@Override
@@ -87,6 +91,9 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		status = result.status();
 		volume = result.volume();
 		preview = EnclosurePreview.capture(level, worldPosition, result);
+		if (status == EnclosureScanner.Status.SEALED) {
+			block.claimOwnership(this, player);
+		}
 		if (getBlockState().getBlock() instanceof PopBedBlock) {
 			housingStatus = MinionHousing.validate((ServerLevel) level, worldPosition, player, result);
 		}
@@ -102,6 +109,30 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 
 	public EnclosurePreview getPreview() {
 		return preview;
+	}
+
+	/** The player who first validated this sealed building. */
+	public UUID getOwnerId() {
+		return owner;
+	}
+
+	/** The faction of the owner when the building was claimed. */
+	public UUID getFactionId() {
+		return faction;
+	}
+
+	public boolean canAccess(ServerPlayer player) {
+		return owner == null || owner.equals(player.getUUID())
+				|| (faction != null && EnclosureBlock.getPlayerFaction(player).filter(faction::equals).isPresent());
+	}
+
+	boolean claimOwnership(ServerPlayer player, UUID playerFaction) {
+		if (owner != null) return canAccess(player);
+		if (playerFaction == null) return false;
+		owner = player.getUUID();
+		faction = playerFaction;
+		setChanged();
+		return true;
 	}
 
 	private static EnclosureScanner.Position position(BlockPos pos) {
@@ -143,6 +174,8 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.saveAdditional(tag, registries);
 		ContainerHelper.saveAllItems(tag, items, registries);
+		if (owner != null) tag.putUUID("EnclosureOwner", owner);
+		if (faction != null) tag.putUUID("EnclosureFaction", faction);
 	}
 
 	@Override
@@ -150,6 +183,8 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		super.loadAdditional(tag, registries);
 		items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
 		ContainerHelper.loadAllItems(tag, items, registries);
+		owner = tag.hasUUID("EnclosureOwner") ? tag.getUUID("EnclosureOwner") : null;
+		faction = tag.hasUUID("EnclosureFaction") ? tag.getUUID("EnclosureFaction") : null;
 		// A scan is a snapshot, not proof that the building is still closed after a reload.
 		status = EnclosureScanner.Status.UNCHECKED;
 		housingStatus = MinionHousing.Status.NONE;

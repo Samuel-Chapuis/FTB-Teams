@@ -2,6 +2,7 @@ package dev.ftb.mods.ftbteams.world.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.Util;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -23,8 +24,8 @@ public class MinionPopulationData extends SavedData {
 		return assignments.get(home.asLong());
 	}
 
-	public boolean claim(BlockPos home, UUID minion, UUID faction) {
-		boolean changed = assignments.claim(home.asLong(), minion, faction);
+	public boolean claim(BlockPos home, UUID minion, UUID owner, UUID faction) {
+		boolean changed = assignments.claim(home.asLong(), minion, owner, faction);
 		if (changed) setDirty();
 		return changed;
 	}
@@ -48,7 +49,9 @@ public class MinionPopulationData extends SavedData {
 		for (int i = 0; i < homes.size(); i++) {
 			CompoundTag home = homes.getCompound(i);
 			if (home.hasUUID("Minion") && home.hasUUID("Faction")) {
-				data.assignments.claim(home.getLong("Pos"), home.getUUID("Minion"), home.getUUID("Faction"));
+				// Worlds created before explicit ownership retain their resident assignment.
+				UUID owner = home.hasUUID("Owner") ? home.getUUID("Owner") : Util.NIL_UUID;
+				data.assignments.claim(home.getLong("Pos"), home.getUUID("Minion"), owner, home.getUUID("Faction"));
 			}
 		}
 		return data;
@@ -61,6 +64,7 @@ public class MinionPopulationData extends SavedData {
 			CompoundTag home = new CompoundTag();
 			home.putLong("Pos", pos);
 			home.putUUID("Minion", resident.minion());
+			home.putUUID("Owner", resident.owner());
 			home.putUUID("Faction", resident.faction());
 			homes.add(home);
 		});

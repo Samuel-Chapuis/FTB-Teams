@@ -163,7 +163,7 @@ public class FTBTeamsClient {
 	/** Draw the player's faction mark next to the vanilla HUD without allocating a dynamic texture every frame. */
 	private static void renderFactionLogo(GuiGraphics graphics, DeltaTracker tickDelta) {
 		Minecraft minecraft = Minecraft.getInstance();
-		if (!shouldShowFactionLogo() || minecraft.player == null || ClientTeamManagerImpl.getInstance() == null) {
+		if (minecraft.options.hideGui || !shouldShowFactionLogo() || minecraft.player == null || ClientTeamManagerImpl.getInstance() == null) {
 			return;
 		}
 

@@ -94,6 +94,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		status = result.status();
 		volume = result.volume();
 		preview = EnclosurePreview.capture(level, worldPosition, result);
+		setChanged();
 		if (status == EnclosureScanner.Status.SEALED) {
 			block.claimOwnership(this, player);
 		}
@@ -171,6 +172,12 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		return items.size();
 	}
 
+	/** Output slots are extract-only. This also protects insertion through item handlers and pipes. */
+	@Override
+	public boolean canPlaceItem(int slot, ItemStack stack) {
+		return slot >= 0 && slot < EnclosureBlock.INPUT_SLOTS && super.canPlaceItem(slot, stack);
+	}
+
 	@Override
 	protected NonNullList<ItemStack> getItems() {
 		return items;
@@ -185,6 +192,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.saveAdditional(tag, registries);
 		ContainerHelper.saveAllItems(tag, items, registries);
+		tag.putBoolean("EnclosureSealed", status == EnclosureScanner.Status.SEALED);
 		if (owner != null) tag.putUUID("EnclosureOwner", owner);
 		if (faction != null) tag.putUUID("EnclosureFaction", faction);
 	}
@@ -197,7 +205,7 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		owner = tag.hasUUID("EnclosureOwner") ? tag.getUUID("EnclosureOwner") : null;
 		faction = tag.hasUUID("EnclosureFaction") ? tag.getUUID("EnclosureFaction") : null;
 		// A scan is a snapshot, not proof that the building is still closed after a reload.
-		status = EnclosureScanner.Status.UNCHECKED;
+		status = tag.getBoolean("EnclosureSealed") ? EnclosureScanner.Status.SEALED : EnclosureScanner.Status.UNCHECKED;
 		housingStatus = MinionHousing.Status.NONE;
 		volume = 0;
 		preview = EnclosurePreview.EMPTY;

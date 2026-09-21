@@ -32,6 +32,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -48,13 +49,19 @@ import java.util.UUID;
 public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider {
 	public static final float BODY_DIVISOR = 1.75F;
 	public static final int MAX_FOOD = 3;
+	public static final int INITIAL_FOOD = 1;
+	public static final int SKIN_COUNT = 9;
 	private static final EntityDataAccessor<Optional<BlockPos>> HOME = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
 	private static final EntityDataAccessor<Optional<BlockPos>> WORKSTATION = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
 	private static final EntityDataAccessor<String> PROFESSION = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
 	private static final EntityDataAccessor<Integer> FOOD = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.INT);
+	private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.INT);
+	private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
+	private static final EntityDataAccessor<String> CUSTOM_SKIN_UUID = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
 	private UUID faction;
 	private UUID owner;
 	private long lastFoodDay = Long.MIN_VALUE;
+	private boolean skinAssigned;
 
 	public MinionEntity(EntityType<? extends MinionEntity> type, Level level) {
 		super(type, level);
@@ -76,10 +83,17 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		builder.define(HOME, Optional.empty());
 		builder.define(WORKSTATION, Optional.empty());
 		builder.define(PROFESSION, "");
-		builder.define(FOOD, MAX_FOOD);
+		builder.define(FOOD, INITIAL_FOOD);
+		builder.define(SKIN, 0);
+		builder.define(CUSTOM_SKIN, "");
+		builder.define(CUSTOM_SKIN_UUID, "");
 	}
 
 	public void assignHome(BlockPos home, UUID owner, UUID faction) {
+		if (!skinAssigned) {
+			entityData.set(SKIN, level().getRandom().nextInt(SKIN_COUNT));
+			skinAssigned = true;
+		}
 		entityData.set(HOME, Optional.of(home.immutable()));
 		this.owner = owner;
 		this.faction = faction;
@@ -95,6 +109,18 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public boolean isWorkingAt(BlockPos pos) { return getWorkstation().filter(pos::equals).isPresent(); }
 
 	public String getProfession() { return entityData.get(PROFESSION); }
+
+	public ItemStack getProfessionStack() {
+		return getWorkstation().map(pos -> {
+			var block = level().getBlockState(pos).getBlock();
+			return block.asItem() == net.minecraft.world.item.Items.AIR ? ItemStack.EMPTY : new ItemStack(block.asItem());
+		}).orElse(ItemStack.EMPTY);
+	}
+
+	public void clearProfession() {
+		setWorkstation(null);
+		entityData.set(PROFESSION, "");
+	}
 
 	private void setProfession(BlockState state) { entityData.set(PROFESSION, state.getBlock().getDescriptionId()); }
 
@@ -124,6 +150,20 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 
 	public int getFood() {
 		return entityData.get(FOOD);
+	}
+
+	public int getSkinId() { return entityData.get(SKIN); }
+
+	public String getCustomSkinId() { return entityData.get(CUSTOM_SKIN); }
+	public String getCustomSkinUuid() { return entityData.get(CUSTOM_SKIN_UUID); }
+
+	public void setCustomSkinId(String id) {
+		entityData.set(CUSTOM_SKIN, id == null ? "" : id);
+	}
+
+	public void setCustomSkin(String name, UUID uuid) {
+		entityData.set(CUSTOM_SKIN, name == null ? "" : name);
+		entityData.set(CUSTOM_SKIN_UUID, uuid == null ? "" : uuid.toString());
 	}
 
 	/** Reserved for future food/workstation rules; the current cap is intentionally three points. */
@@ -164,6 +204,10 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		buf.writeInt(getFactionColor());
 		buf.writeUtf(getFactionLogo(), 8192);
 		buf.writeUtf(getProfession(), 256);
+		buf.writeBoolean(getHome().isPresent());
+		getHome().ifPresent(buf::writeBlockPos);
+		buf.writeBoolean(getWorkstation().isPresent());
+		getWorkstation().ifPresent(buf::writeBlockPos);
 	}
 
 	@Override
@@ -299,6 +343,9 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		if (owner != null) tag.putUUID("MinionOwner", owner);
 		if (faction != null) tag.putUUID("MinionFaction", faction);
 		tag.putInt("MinionFood", getFood());
+		tag.putInt("MinionSkin", getSkinId());
+		if (!getCustomSkinId().isBlank()) tag.putString("MinionCustomSkin", getCustomSkinId());
+		if (!getCustomSkinUuid().isBlank()) tag.putString("MinionCustomSkinUuid", getCustomSkinUuid());
 		tag.putLong("MinionFoodDay", lastFoodDay);
 		if (!getProfession().isBlank()) tag.putString("MinionProfession", getProfession());
 		tag.putBoolean("MinionResting", isResting());
@@ -307,7 +354,13 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	@Override
 	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
-		setFood(tag.contains("MinionFood") ? tag.getInt("MinionFood") : MAX_FOOD);
+		setFood(tag.contains("MinionFood") ? tag.getInt("MinionFood") : INITIAL_FOOD);
+		skinAssigned = tag.contains("MinionSkin");
+		if (skinAssigned) entityData.set(SKIN, Math.floorMod(tag.getInt("MinionSkin"), SKIN_COUNT));
+		setCustomSkinId(tag.getString("MinionCustomSkin"));
+		String savedSkinUuid = tag.getString("MinionCustomSkinUuid");
+		if (savedSkinUuid.isBlank() && getCustomSkinId().matches("[0-9a-fA-F-]{36}")) savedSkinUuid = getCustomSkinId();
+		entityData.set(CUSTOM_SKIN_UUID, savedSkinUuid);
 		lastFoodDay = tag.contains("MinionFoodDay") ? tag.getLong("MinionFoodDay") : Long.MIN_VALUE;
 		if (tag.contains("MinionHome") && tag.hasUUID("MinionFaction")) {
 			assignHome(BlockPos.of(tag.getLong("MinionHome")), tag.hasUUID("MinionOwner") ? tag.getUUID("MinionOwner") : null,

@@ -59,7 +59,13 @@ public class EnclosureMenu extends AbstractContainerMenu {
 				&& enclosure.getBlockState().getBlock() instanceof CashRegisterBlock;
 		container.startOpen(inventory.player);
 		for (int slot = 0; slot < storageSize; slot++) {
-			addSlot(new Slot(container, slot, STORAGE_X + slot % 5 * 18, storageY(slot)));
+			final int containerSlot = slot;
+			addSlot(new Slot(container, containerSlot, STORAGE_X + containerSlot % 5 * 18, storageY(containerSlot)) {
+				@Override
+				public boolean mayPlace(ItemStack stack) {
+					return containerSlot < EnclosureBlock.INPUT_SLOTS && super.mayPlace(stack);
+				}
+			});
 		}
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 9; col++) {

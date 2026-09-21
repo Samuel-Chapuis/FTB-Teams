@@ -177,6 +177,12 @@
   "ftbteams.minion.resting": "Au lit",
   "ftbteams.minion.awake": "Éveillé",
   "ftbteams.minion.change_skin": "Changer le skin",
-  "ftbteams.minion.change_skin_tooltip": "La sélection des skins sera ajoutée avec les métiers et l'équipement du minion.",
+  "ftbteams.minion.choose_skin": "Utiliser le skin d'un joueur",
+  "ftbteams.minion.choose_skin_tooltip": "Entrez le pseudo d'un joueur puis appuyez sur Entrée.",
+  "ftbteams.minion.profession": "Métier :",
+  "ftbteams.minion.profession_none": "Non défini",
+  "ftbteams.minion.clear_profession_tooltip": "Oublier ce métier",
+  "ftbteams.minion.home": "Lit : %s",
+  "ftbteams.minion.workstation": "Métier : %s",
   "block.ftbteams.cash_register": "Caisse enregistreuse"
 }

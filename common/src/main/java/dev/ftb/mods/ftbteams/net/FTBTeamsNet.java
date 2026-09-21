@@ -19,6 +19,7 @@ public class FTBTeamsNet {
 		NetworkHelper.registerC2S(SendMessageMessage.TYPE, SendMessageMessage.STREAM_CODEC, SendMessageMessage::handle);
 		NetworkHelper.registerC2S(CreatePartyMessage.TYPE, CreatePartyMessage.STREAM_CODEC, CreatePartyMessage::handle);
 		NetworkHelper.registerC2S(PlayerGUIOperationMessage.TYPE, PlayerGUIOperationMessage.STREAM_CODEC, PlayerGUIOperationMessage::handle);
+		NetworkHelper.registerC2S(SetMinionSkinMessage.TYPE, SetMinionSkinMessage.STREAM_CODEC, SetMinionSkinMessage::handle);
 		NetworkHelper.registerC2S(ToggleChatRedirectionMessage.TYPE, ToggleChatRedirectionMessage.STREAM_CODEC, ToggleChatRedirectionMessage::handle);
 	}
 }

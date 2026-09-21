@@ -195,6 +195,12 @@
   "ftbteams.minion.resting": "Resting",
   "ftbteams.minion.awake": "Awake",
   "ftbteams.minion.change_skin": "Change skin",
-  "ftbteams.minion.change_skin_tooltip": "Skin selection will be added with minion jobs and equipment.",
+  "ftbteams.minion.choose_skin": "Use player skin",
+  "ftbteams.minion.choose_skin_tooltip": "Enter a player name and press Enter.",
+  "ftbteams.minion.profession": "Profession:",
+  "ftbteams.minion.profession_none": "Undefined",
+  "ftbteams.minion.clear_profession_tooltip": "Forget this profession",
+  "ftbteams.minion.home": "Bed: %s",
+  "ftbteams.minion.workstation": "Work: %s",
   "block.ftbteams.cash_register": "Cash Register"
 }

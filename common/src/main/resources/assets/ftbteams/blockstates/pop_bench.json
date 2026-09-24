@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,part=left": {"model": "ftbteams:block/pop_bench_right", "y": 180},
+    "facing=north,part=right": {"model": "ftbteams:block/pop_bench_left", "y": 180},
+    "facing=east,part=left": {"model": "ftbteams:block/pop_bench_right", "y": 270},
+    "facing=east,part=right": {"model": "ftbteams:block/pop_bench_left", "y": 270},
+    "facing=south,part=left": {"model": "ftbteams:block/pop_bench_right"},
+    "facing=south,part=right": {"model": "ftbteams:block/pop_bench_left"},
+    "facing=west,part=left": {"model": "ftbteams:block/pop_bench_right", "y": 90},
+    "facing=west,part=right": {"model": "ftbteams:block/pop_bench_left", "y": 90}
+  }
+}

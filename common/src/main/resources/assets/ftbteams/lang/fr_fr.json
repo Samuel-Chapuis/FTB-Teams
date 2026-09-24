@@ -184,5 +184,7 @@
   "ftbteams.minion.clear_profession_tooltip": "Oublier ce métier",
   "ftbteams.minion.home": "Lit : %s",
   "ftbteams.minion.workstation": "Métier : %s",
-  "block.ftbteams.cash_register": "Caisse enregistreuse"
+  "block.ftbteams.cash_register": "Caisse enregistreuse",
+  "block.ftbteams.pop_bench": "Banc Pop",
+  "ftbteams.minion.job.unemployed": "Sans emploi"
 }

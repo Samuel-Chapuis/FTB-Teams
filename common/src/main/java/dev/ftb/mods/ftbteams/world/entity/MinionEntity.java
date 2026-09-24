@@ -2,7 +2,9 @@ package dev.ftb.mods.ftbteams.world.entity;
 
 import dev.architectury.registry.menu.ExtendedMenuProvider;
 import dev.architectury.registry.menu.MenuRegistry;
+import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
+import dev.ftb.mods.ftbteams.world.block.PopBenchBlock;
 import dev.ftb.mods.ftbteams.world.entity.minion.MinionBeds;
 import dev.ftb.mods.ftbteams.world.entity.minion.MinionFoodTracker;
 import dev.ftb.mods.ftbteams.world.entity.minion.MinionGoals;
@@ -11,6 +13,7 @@ import dev.ftb.mods.ftbteams.world.entity.minion.MinionPopulationData;
 import dev.ftb.mods.ftbteams.world.entity.minion.MinionWorkstations;
 import dev.ftb.mods.ftbteams.world.entity.minion.job.MinionJobs;
 import dev.ftb.mods.ftbteams.world.entity.minion.job.MinionSchedule;
+import dev.ftb.mods.ftbteams.world.entity.minion.job.UnemployedJob;
 import dev.ftb.mods.ftbteams.world.faction.FactionAccess;
 import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
 import net.minecraft.core.BlockPos;
@@ -37,6 +40,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
@@ -55,8 +59,10 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.INT);
 	private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
 	private static final EntityDataAccessor<String> CUSTOM_SKIN_UUID = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.STRING);
+	private static final EntityDataAccessor<Boolean> BENCH_SITTING = SynchedEntityData.defineId(MinionEntity.class, EntityDataSerializers.BOOLEAN);
 	private final MinionFoodTracker foodTracker = new MinionFoodTracker();
 	private BlockPos activeWorkstation;
+	private BlockPos benchSeat;
 	private UUID faction;
 	private UUID owner;
 	private boolean skinAssigned;
@@ -85,6 +91,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		builder.define(SKIN, 0);
 		builder.define(CUSTOM_SKIN, "");
 		builder.define(CUSTOM_SKIN_UUID, "");
+		builder.define(BENCH_SITTING, false);
 	}
 
 	public void assignHome(BlockPos home, UUID owner, UUID faction) {
@@ -116,16 +123,19 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	}
 
 	public String getProfession() {
-		return entityData.get(PROFESSION);
+		String profession = entityData.get(PROFESSION);
+		return profession.isBlank() ? UnemployedJob.TRANSLATION_KEY : profession;
 	}
 
 	public ItemStack getProfessionStack() {
+		if (entityData.get(PROFESSION).isBlank()) {
+			return new ItemStack(FTBTeams.POP_BENCH_ITEM.get());
+		}
 		return MinionWorkstations.icon(this);
 	}
 
 	public void clearProfession() {
 		assignWorkstation(null);
-		entityData.set(PROFESSION, "");
 	}
 
 	/** Assigns or releases the workstation retained across work, leisure, and sleep periods. */
@@ -133,6 +143,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		entityData.set(WORKSTATION, Optional.ofNullable(pos == null ? null : pos.immutable()));
 		if (pos == null) {
 			stopWorking();
+			entityData.set(PROFESSION, "");
 		}
 	}
 
@@ -158,6 +169,11 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 
 	public int getFood() {
 		return entityData.get(FOOD);
+	}
+
+	/** Applies vanilla nutrition toward the next minion food level. */
+	public void consumeNutrition(int points) {
+		foodTracker.consume(this, points);
 	}
 
 	public int getSkinId() {
@@ -198,7 +214,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 		entityData.set(PROFESSION, profession == null ? "" : profession);
 	}
 
-	/** Reserved for future food/workstation rules; the current cap is intentionally three points. */
+	/** Updates the three-level food bar while enforcing its bounds. */
 	public void setFood(int food) {
 		entityData.set(FOOD, Math.clamp(food, 0, MAX_FOOD));
 	}
@@ -277,6 +293,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 
 	/** Enters the sleeping pose at the assigned pillow. */
 	public void restAt(BlockPos home) {
+		standFromBench();
 		getNavigation().stop();
 		setDeltaMovement(Vec3.ZERO);
 		setPose(Pose.SLEEPING);
@@ -288,6 +305,36 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public void wakeFromBed() {
 		setPose(Pose.STANDING);
 		setNoGravity(false);
+	}
+
+	/** Holds the minion at one bench half and exposes the pose to the client renderer. */
+	public void sitOnBench(BlockPos seat) {
+		BlockState state = level().getBlockState(seat);
+		if (!(state.getBlock() instanceof PopBenchBlock)) {
+			return;
+		}
+		benchSeat = seat.immutable();
+		entityData.set(BENCH_SITTING, true);
+		getNavigation().stop();
+		setDeltaMovement(Vec3.ZERO);
+		setYRot(state.getValue(PopBenchBlock.FACING).getOpposite().toYRot());
+		setYBodyRot(getYRot());
+		setYHeadRot(getYRot());
+		setPos(seat.getX() + 0.5, seat.getY() + 0.45, seat.getZ() + 0.5);
+	}
+
+	public boolean isSittingOnBench() {
+		return entityData.get(BENCH_SITTING);
+	}
+
+	public boolean isSittingAt(BlockPos seat) {
+		return isSittingOnBench() && seat.equals(benchSeat);
+	}
+
+	/** Releases a transient bench reservation. */
+	public void standFromBench() {
+		benchSeat = null;
+		entityData.set(BENCH_SITTING, false);
 	}
 
 	@Override
@@ -304,6 +351,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 				assignWorkstation(null);
 			}
 			if (MinionSchedule.isSleepTime(server.getDayTime())) {
+				standFromBench();
 				stopWorking();
 			}
 			if (tickCount % 20 == 0 && !hasValidHomeAssignment(server)) {
@@ -334,6 +382,9 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	public boolean hurt(DamageSource source, float amount) {
 		if (!level().isClientSide && isResting()) {
 			wakeFromBed();
+		}
+		if (!level().isClientSide && isSittingOnBench()) {
+			standFromBench();
 		}
 		return super.hurt(source, amount);
 	}

@@ -36,7 +36,7 @@ public class MinionScreen extends AbstractContainerScreen<MinionMenu> {
 		addRenderableWidget(Button.builder(Component.literal("\u00D7"), button -> clearProfession())
 				.bounds(leftPos + 294, topPos + 8, 18, 18)
 				.tooltip(Tooltip.create(Component.translatable("ftbteams.minion.clear_profession_tooltip"))).build())
-				.active = !menu.getProfession().isBlank();
+				.active = menu.getWorkstation() != null;
 	}
 
 	private void clearProfession() {

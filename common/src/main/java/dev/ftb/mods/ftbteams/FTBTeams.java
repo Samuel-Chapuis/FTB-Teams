@@ -24,6 +24,7 @@ import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
+import dev.ftb.mods.ftbteams.world.block.PopBenchBlock;
 import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
 import dev.ftb.mods.ftbteams.world.block.entity.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
@@ -78,6 +79,8 @@ public class FTBTeams {
 	public static final RegistrySupplier<CashRegisterBlock> CASH_REGISTER = BLOCKS.register(FTBTeamsAPI.rl("cash_register"),
 			() -> new CashRegisterBlock(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL)
 					.strength(2.5F).sound(SoundType.METAL).noOcclusion()));
+	public static final RegistrySupplier<PopBenchBlock> POP_BENCH = BLOCKS.register(FTBTeamsAPI.rl("pop_bench"),
+			() -> new PopBenchBlock(BlockBehaviour.Properties.of().strength(1.5F).sound(SoundType.WOOD).noOcclusion()));
 	public static final Map<DyeColor, RegistrySupplier<PopBedBlock>> POP_BEDS = registerPopBeds();
 	public static final Map<DyeColor, RegistrySupplier<Item>> POP_BED_ITEMS = registerPopBedItems();
 	// Preserve the existing cyan registry ID and aliases for placed beds and saved inventories.
@@ -85,6 +88,8 @@ public class FTBTeams {
 	public static final RegistrySupplier<Item> POP_BED_ITEM = POP_BED_ITEMS.get(DyeColor.CYAN);
 	public static final RegistrySupplier<Item> CASH_REGISTER_ITEM = ITEMS.register(FTBTeamsAPI.rl("cash_register"),
 			() -> new BlockItem(CASH_REGISTER.get(), new Item.Properties()));
+	public static final RegistrySupplier<Item> POP_BENCH_ITEM = ITEMS.register(FTBTeamsAPI.rl("pop_bench"),
+			() -> new BlockItem(POP_BENCH.get(), new Item.Properties().stacksTo(1)));
 	public static final RegistrySupplier<Item> TEAMS_ICON = ITEMS.register(FTBTeamsAPI.rl("teams_icon"),
 			() -> new Item(new Item.Properties()));
 	public static final Registrar<CreativeModeTab> CREATIVE_TABS = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.CREATIVE_MODE_TAB);
@@ -96,6 +101,7 @@ public class FTBTeams {
 							output.accept(POP_BED_ITEMS.get(color).get());
 						}
 						output.accept(CASH_REGISTER_ITEM.get());
+						output.accept(POP_BENCH_ITEM.get());
 					})));
 	public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = RegistrarManager.get(FTBTeamsAPI.MOD_ID).get(Registries.BLOCK_ENTITY_TYPE);
 	public static final RegistrySupplier<BlockEntityType<EnclosureBlockEntity>> ENCLOSURE_BLOCK_ENTITY = BLOCK_ENTITIES.register(

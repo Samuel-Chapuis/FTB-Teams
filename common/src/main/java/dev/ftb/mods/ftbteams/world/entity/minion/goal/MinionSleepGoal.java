@@ -39,6 +39,7 @@ public final class MinionSleepGoal extends Goal {
 
 	@Override
 	public void start() {
+		minion.standFromBench();
 		repathDelay = 0;
 		minion.getNavigation().stop();
 	}

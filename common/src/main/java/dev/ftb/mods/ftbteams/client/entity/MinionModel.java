@@ -19,5 +19,11 @@ public class MinionModel extends PlayerModel<MinionEntity> {
 			head.xRot = head.yRot = head.zRot = 0;
 			hat.copyFrom(head);
 		}
+		if (entity.isSittingOnBench()) {
+			rightArm.xRot = leftArm.xRot = -0.35F;
+			rightLeg.xRot = leftLeg.xRot = -1.35F;
+			rightLeg.yRot = 0.12F;
+			leftLeg.yRot = -0.12F;
+		}
 	}
 }

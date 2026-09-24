@@ -202,5 +202,7 @@
   "ftbteams.minion.clear_profession_tooltip": "Forget this profession",
   "ftbteams.minion.home": "Bed: %s",
   "ftbteams.minion.workstation": "Work: %s",
-  "block.ftbteams.cash_register": "Cash Register"
+  "block.ftbteams.cash_register": "Cash Register",
+  "block.ftbteams.pop_bench": "Pop Bench",
+  "ftbteams.minion.job.unemployed": "Unemployed"
 }

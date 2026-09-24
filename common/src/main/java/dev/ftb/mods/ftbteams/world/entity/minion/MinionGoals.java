@@ -2,6 +2,8 @@ package dev.ftb.mods.ftbteams.world.entity.minion;
 
 import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
 import dev.ftb.mods.ftbteams.world.entity.minion.goal.MinionSleepGoal;
+import dev.ftb.mods.ftbteams.world.entity.minion.goal.MinionEatGoal;
+import dev.ftb.mods.ftbteams.world.entity.minion.goal.MinionBenchGoal;
 import dev.ftb.mods.ftbteams.world.entity.minion.goal.MinionWorkGoal;
 import dev.ftb.mods.ftbteams.world.entity.minion.job.MinionJobs;
 import dev.ftb.mods.ftbteams.world.entity.minion.job.MinionSchedule;
@@ -19,16 +21,18 @@ public final class MinionGoals {
 	private MinionGoals() {
 	}
 
-	/** Registers sleep and work before the lower-priority daytime idle behaviors. */
+	/** Registers safety, sleep, food, work, and leisure behaviors in descending priority. */
 	public static void register(GoalSelector selector, MinionEntity minion) {
 		selector.addGoal(0, new FloatGoal(minion));
 		selector.addGoal(1, new MinionSleepGoal(minion));
-		selector.addGoal(2, new MinionWorkGoal(minion));
-		selector.addGoal(3, new OpenDoorGoal(minion, true));
-		selector.addGoal(4, new MoveTowardsRestrictionGoal(minion, 1));
-		selector.addGoal(5, leisureStroll(minion));
-		selector.addGoal(6, awakePlayerLook(minion));
-		selector.addGoal(7, awakeRandomLook(minion));
+		selector.addGoal(2, new MinionEatGoal(minion));
+		selector.addGoal(3, new MinionWorkGoal(minion));
+		selector.addGoal(4, new OpenDoorGoal(minion, true));
+		selector.addGoal(5, new MoveTowardsRestrictionGoal(minion, 1));
+		selector.addGoal(6, new MinionBenchGoal(minion));
+		selector.addGoal(7, leisureStroll(minion));
+		selector.addGoal(8, awakePlayerLook(minion));
+		selector.addGoal(9, awakeRandomLook(minion));
 	}
 
 	private static WaterAvoidingRandomStrollGoal leisureStroll(MinionEntity minion) {
@@ -65,6 +69,6 @@ public final class MinionGoals {
 
 	private static boolean canWander(MinionEntity minion) {
 		return !MinionSchedule.isSleepTime(minion.level().getDayTime()) && !MinionJobs.isAssignedWorkTime(minion)
-				&& !minion.isResting();
+				&& !minion.isResting() && !minion.isSittingOnBench();
 	}
 }

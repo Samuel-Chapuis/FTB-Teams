@@ -1,5 +1,6 @@
-package dev.ftb.mods.ftbteams.world.block;
+package dev.ftb.mods.ftbteams.world.block.enclosure;
 
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.level.Level;
@@ -18,21 +19,29 @@ public record EnclosurePreview(List<Entry> blocks) {
 
 	public EnclosurePreview {
 		blocks = List.copyOf(blocks);
-		if (blocks.size() > MAX_BLOCKS) throw new IllegalArgumentException("Enclosure preview exceeds search volume");
+		if (blocks.size() > MAX_BLOCKS) {
+			throw new IllegalArgumentException("Enclosure preview exceeds search volume");
+		}
 	}
 
 	public record Entry(BlockPos offset, BlockState state) {
 	}
 
 	public static EnclosurePreview capture(Level level, BlockPos origin, EnclosureScanner.Result result) {
-		if (result.status() != EnclosureScanner.Status.SEALED) return EMPTY;
+		if (result.status() != EnclosureScanner.Status.SEALED) {
+			return EMPTY;
+		}
 		List<Entry> blocks = new ArrayList<>();
 		for (EnclosureScanner.Position p : result.boundary()) {
 			BlockPos pos = new BlockPos(p.x(), p.y(), p.z());
 			// Never force-load a chunk for a preview.
-			if (!level.hasChunkAt(pos)) return EMPTY;
+			if (!level.hasChunkAt(pos)) {
+				return EMPTY;
+			}
 			BlockState state = level.getBlockState(pos);
-			if (!state.isAir()) blocks.add(new Entry(pos.subtract(origin), state));
+			if (!state.isAir()) {
+				blocks.add(new Entry(pos.subtract(origin), state));
+			}
 		}
 		return new EnclosurePreview(blocks);
 	}
@@ -48,11 +57,15 @@ public record EnclosurePreview(List<Entry> blocks) {
 
 	public static EnclosurePreview read(RegistryFriendlyByteBuf buf) {
 		int count = buf.readVarInt();
-		if (count < 0 || count > MAX_BLOCKS) throw new IllegalArgumentException("Invalid enclosure preview size");
+		if (count < 0 || count > MAX_BLOCKS) {
+			throw new IllegalArgumentException("Invalid enclosure preview size");
+		}
 		List<Entry> blocks = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
 			int packed = buf.readUnsignedShort();
-			if (packed >= MAX_BLOCKS) throw new IllegalArgumentException("Invalid preview block offset");
+			if (packed >= MAX_BLOCKS) {
+				throw new IllegalArgumentException("Invalid preview block offset");
+			}
 			BlockPos offset = new BlockPos(packed / (DIAMETER * DIAMETER) - RADIUS,
 					packed / DIAMETER % DIAMETER - RADIUS, packed % DIAMETER - RADIUS);
 			blocks.add(new Entry(offset, Block.stateById(buf.readVarInt())));

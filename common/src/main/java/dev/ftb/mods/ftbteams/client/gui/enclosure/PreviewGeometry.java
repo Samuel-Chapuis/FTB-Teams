@@ -1,4 +1,4 @@
-package dev.ftb.mods.ftbteams.client.gui;
+package dev.ftb.mods.ftbteams.client.gui.enclosure;
 
 import java.util.ArrayList;
 import java.util.List;

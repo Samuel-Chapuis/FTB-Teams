@@ -1,9 +1,9 @@
-package dev.ftb.mods.ftbteams.client.gui;
+package dev.ftb.mods.ftbteams.client.gui.enclosure;
 
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import dev.ftb.mods.ftbteams.world.block.EnclosurePreview;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosurePreview;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
@@ -25,7 +25,7 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.List;
 
-import static dev.ftb.mods.ftbteams.client.gui.PreviewGeometry.Vertex;
+import static dev.ftb.mods.ftbteams.client.gui.enclosure.PreviewGeometry.Vertex;
 
 /** Cached textured block geometry, sliced by a camera-facing plane before drawing into the GUI. */
 public final class EnclosurePreviewRenderer {

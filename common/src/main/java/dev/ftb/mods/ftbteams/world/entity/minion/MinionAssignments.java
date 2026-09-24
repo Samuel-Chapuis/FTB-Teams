@@ -1,4 +1,4 @@
-package dev.ftb.mods.ftbteams.world.entity;
+package dev.ftb.mods.ftbteams.world.entity.minion;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,9 @@ public final class MinionAssignments {
 	}
 
 	public boolean claim(long home, UUID minion, UUID owner, UUID faction) {
-		if (homes.containsKey(home) || residents.containsKey(minion)) return false;
+		if (homes.containsKey(home) || residents.containsKey(minion)) {
+			return false;
+		}
 		homes.put(home, new Resident(minion, owner, faction));
 		residents.put(minion, home);
 		return true;
@@ -25,7 +27,9 @@ public final class MinionAssignments {
 
 	public boolean release(long home, UUID minion) {
 		Resident resident = homes.get(home);
-		if (resident == null || !resident.minion().equals(minion)) return false;
+		if (resident == null || !resident.minion().equals(minion)) {
+			return false;
+		}
 		homes.remove(home);
 		residents.remove(minion);
 		return true;

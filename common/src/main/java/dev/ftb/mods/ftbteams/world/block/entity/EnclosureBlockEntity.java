@@ -1,11 +1,15 @@
-package dev.ftb.mods.ftbteams.world.block;
+package dev.ftb.mods.ftbteams.world.block.entity;
 
 import dev.architectury.registry.menu.ExtendedMenuProvider;
 import dev.ftb.mods.ftbteams.FTBTeams;
+import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosurePreview;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureScanner;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureValidator;
+import dev.ftb.mods.ftbteams.world.entity.minion.MinionHousing;
+import dev.ftb.mods.ftbteams.world.entity.minion.MinionPopulationData;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
-import dev.ftb.mods.ftbteams.world.entity.MinionHousing;
-import dev.ftb.mods.ftbteams.world.entity.MinionPopulationData;
-import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
+import dev.ftb.mods.ftbteams.world.faction.FactionAccess;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
@@ -22,10 +26,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 
 import java.util.UUID;
 
+/** Persistent controller state shared by every {@link EnclosureBlock} implementation. */
 public class EnclosureBlockEntity extends BaseContainerBlockEntity implements ExtendedMenuProvider {
 	private NonNullList<ItemStack> items;
 	private EnclosureScanner.Status status = EnclosureScanner.Status.UNCHECKED;
@@ -83,24 +87,16 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		}
 		nextCheckTick = level.getGameTime() + 10;
 		EnclosureBlock block = (EnclosureBlock) getBlockState().getBlock();
-		var seeds = block.getInteriorSeeds(getBlockState(), worldPosition).stream().map(EnclosureBlockEntity::position).toList();
-		var result = EnclosureScanner.scan(position(worldPosition), seeds, EnclosureBlock.SEARCH_RADIUS, candidate -> {
-			BlockPos pos = new BlockPos(candidate.x(), candidate.y(), candidate.z());
-			if (level.isOutsideBuildHeight(pos) || !level.getWorldBorder().isWithinBounds(pos) || !level.hasChunkAt(pos)) {
-				return EnclosureScanner.Cell.UNAVAILABLE;
-			}
-			return level.getBlockState(pos).isAir() ? EnclosureScanner.Cell.AIR : EnclosureScanner.Cell.SOLID;
-		});
+		var validation = EnclosureValidator.validate((ServerLevel) level, block, getBlockState(), worldPosition);
+		var result = validation.scan();
 		status = result.status();
 		volume = result.volume();
-		preview = EnclosurePreview.capture(level, worldPosition, result);
+		preview = validation.preview();
 		setChanged();
 		if (status == EnclosureScanner.Status.SEALED) {
 			block.claimOwnership(this, player);
 		}
-		if (getBlockState().getBlock() instanceof PopBedBlock) {
-			housingStatus = MinionHousing.validate((ServerLevel) level, worldPosition, player, result);
-		}
+		block.onEnclosureChecked(this, player, result);
 		return true;
 	}
 
@@ -116,10 +112,14 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	}
 
 	public int getWorkingMinions() {
-		if (!(getBlockState().getBlock() instanceof CashRegisterBlock) || !(level instanceof ServerLevel server)) return 0;
-		int count = server.getEntitiesOfClass(MinionEntity.class,
-				new AABB(worldPosition).inflate(3.0), minion -> minion.isWorkingAt(worldPosition)).size();
-		return Math.min(1, count);
+		return level instanceof ServerLevel server && getBlockState().getBlock() instanceof EnclosureBlock block
+				? block.getWorkerCount(server, worldPosition) : 0;
+	}
+
+	/** Updates the housing result produced by a specialized enclosure block. */
+	public void setHousingStatus(MinionHousing.Status status) {
+		housingStatus = status;
+		setChanged();
 	}
 
 	/** The player who first validated this sealed building. */
@@ -133,28 +133,28 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 	}
 
 	public boolean canAccess(ServerPlayer player) {
-		return owner == null || owner.equals(player.getUUID())
-				|| (faction != null && EnclosureBlock.getPlayerFaction(player).filter(faction::equals).isPresent());
+		return FactionAccess.canAccess(owner, faction, player);
 	}
 
-	boolean claimOwnership(ServerPlayer player, UUID playerFaction) {
-		if (owner != null) return canAccess(player);
-		if (playerFaction == null) return false;
+	/** Claims an unowned controller for the supplied player and faction. */
+	public boolean claimOwnership(ServerPlayer player, UUID playerFaction) {
+		if (owner != null) {
+			return canAccess(player);
+		}
+		if (playerFaction == null) {
+			return false;
+		}
 		owner = player.getUUID();
 		faction = playerFaction;
 		setChanged();
 		return true;
 	}
 
-	private static EnclosureScanner.Position position(BlockPos pos) {
-		return new EnclosureScanner.Position(pos.getX(), pos.getY(), pos.getZ());
-	}
-
 	@Override
 	public void saveExtraData(FriendlyByteBuf buf) {
 		buf.writeVarInt(getContainerSize());
 		buf.writeBlockPos(worldPosition);
-		buf.writeBoolean(getBlockState().getBlock() instanceof CashRegisterBlock);
+		buf.writeBoolean(getBlockState().getBlock() instanceof EnclosureBlock block && block.showsWorkerStatus());
 	}
 
 	@Override
@@ -193,8 +193,12 @@ public class EnclosureBlockEntity extends BaseContainerBlockEntity implements Ex
 		super.saveAdditional(tag, registries);
 		ContainerHelper.saveAllItems(tag, items, registries);
 		tag.putBoolean("EnclosureSealed", status == EnclosureScanner.Status.SEALED);
-		if (owner != null) tag.putUUID("EnclosureOwner", owner);
-		if (faction != null) tag.putUUID("EnclosureFaction", faction);
+		if (owner != null) {
+			tag.putUUID("EnclosureOwner", owner);
+		}
+		if (faction != null) {
+			tag.putUUID("EnclosureFaction", faction);
+		}
 	}
 
 	@Override

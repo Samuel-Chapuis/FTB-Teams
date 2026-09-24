@@ -1,5 +1,6 @@
-package dev.ftb.mods.ftbteams.world.entity;
+package dev.ftb.mods.ftbteams.world.entity.minion;
 
+import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.Util;
@@ -26,19 +27,25 @@ public class MinionPopulationData extends SavedData {
 
 	public boolean claim(BlockPos home, UUID minion, UUID owner, UUID faction) {
 		boolean changed = assignments.claim(home.asLong(), minion, owner, faction);
-		if (changed) setDirty();
+		if (changed) {
+			setDirty();
+		}
 		return changed;
 	}
 
 	public void release(BlockPos home, UUID minion) {
-		if (assignments.release(home.asLong(), minion)) setDirty();
+		if (assignments.release(home.asLong(), minion)) {
+			setDirty();
+		}
 	}
 
 	public void removeBed(ServerLevel level, BlockPos home) {
 		var resident = resident(home);
 		if (resident != null) {
 			release(home, resident.minion());
-			if (level.getEntity(resident.minion()) instanceof MinionEntity minion) minion.discard();
+			if (level.getEntity(resident.minion()) instanceof MinionEntity minion) {
+				minion.discard();
+			}
 			// An unloaded minion will see the revoked assignment and discard itself when loaded.
 		}
 	}

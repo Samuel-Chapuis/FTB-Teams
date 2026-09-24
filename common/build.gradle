@@ -30,6 +30,18 @@ tasks.named('check') {
 	dependsOn enclosureScannerTest
 	dependsOn 'enclosurePreviewTest'
 	dependsOn 'minionAssignmentsTest'
+	dependsOn 'minionScheduleTest'
+}
+
+tasks.register('minionScheduleTest', JavaExec) {
+	group = 'verification'
+	description = 'Verify minion clock conversion and work/sleep schedule boundaries.'
+	dependsOn testClasses
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'dev.ftb.mods.ftbteams.world.entity.minion.job.MinionScheduleTest'
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 tasks.register('minionAssignmentsTest', JavaExec) {

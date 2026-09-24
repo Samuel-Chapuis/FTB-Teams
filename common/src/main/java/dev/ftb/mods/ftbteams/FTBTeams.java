@@ -25,7 +25,7 @@ import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import dev.ftb.mods.ftbteams.net.FTBTeamsNet;
 import dev.ftb.mods.ftbteams.world.block.PopBedBlock;
 import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
-import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
+import dev.ftb.mods.ftbteams.world.block.entity.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.inventory.EnclosureMenu;
 import dev.ftb.mods.ftbteams.world.inventory.MinionMenu;
 import dev.architectury.registry.menu.MenuRegistry;

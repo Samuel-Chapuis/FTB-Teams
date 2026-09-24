@@ -1,5 +1,6 @@
 package dev.ftb.mods.ftbteams.world.entity;
 
+import dev.ftb.mods.ftbteams.world.entity.minion.MinionAssignments;
 import java.util.UUID;
 
 public final class MinionAssignmentsTest {

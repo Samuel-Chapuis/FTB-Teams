@@ -3,7 +3,7 @@ package dev.ftb.mods.ftbteams.net;
 import dev.architectury.networking.NetworkManager;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.client.FTBTeamsClient;
-import dev.ftb.mods.ftbteams.world.block.EnclosurePreview;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosurePreview;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

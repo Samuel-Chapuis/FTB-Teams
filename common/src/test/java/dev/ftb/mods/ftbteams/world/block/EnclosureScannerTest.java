@@ -3,7 +3,7 @@ package dev.ftb.mods.ftbteams.world.block;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static dev.ftb.mods.ftbteams.world.block.EnclosureScanner.*;
+import static dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureScanner.*;
 
 /** Dependency-free regression tests; also runnable without bootstrapping Minecraft. */
 public final class EnclosureScannerTest {

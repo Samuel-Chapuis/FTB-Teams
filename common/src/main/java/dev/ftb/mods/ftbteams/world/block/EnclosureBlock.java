@@ -1,9 +1,12 @@
 package dev.ftb.mods.ftbteams.world.block;
 
 import dev.architectury.registry.menu.MenuRegistry;
-import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureScanner;
+import dev.ftb.mods.ftbteams.world.block.entity.EnclosureBlockEntity;
+import dev.ftb.mods.ftbteams.world.faction.FactionAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
@@ -24,7 +27,7 @@ public abstract class EnclosureBlock extends BaseEntityBlock {
 	public static final int SEARCH_RADIUS = 15;
 	/** Slots 0-19: inputs (the four upper rows). */
 	public static final int INPUT_SLOTS = 20;
-	/** Slots 20-24: outputs (the separate bottom row). Roles do not restrict test storage yet. */
+	/** Slots 20-24: extract-only outputs (the separate bottom row). */
 	public static final int OUTPUT_SLOTS = 5;
 	public static final int STORAGE_SIZE = INPUT_SLOTS + OUTPUT_SLOTS;
 
@@ -46,10 +49,26 @@ public abstract class EnclosureBlock extends BaseEntityBlock {
 		return List.of(pos.above());
 	}
 
+	/**
+	 * Called after a manual enclosure scan. Subclasses use this hook for building-specific effects
+	 * such as assigning a resident to a Pop Bed.
+	 */
+	public void onEnclosureChecked(EnclosureBlockEntity enclosure, ServerPlayer player, EnclosureScanner.Result result) {
+	}
+
+	/** Returns the number displayed by building interfaces that expose a worker slot. */
+	public int getWorkerCount(ServerLevel level, BlockPos pos) {
+		return 0;
+	}
+
+	/** Selects the worker-specific status panel without coupling the block entity to a concrete block. */
+	public boolean showsWorkerStatus() {
+		return false;
+	}
+
 	/** Returns the party faction currently associated with a player, if they belong to one. */
 	public static Optional<UUID> getPlayerFaction(ServerPlayer player) {
-		return FTBTeamsAPI.api().getManager().getTeamForPlayer(player)
-				.filter(team -> team.isPartyTeam()).map(team -> team.getTeamId());
+		return FactionAccess.findPlayerFaction(player);
 	}
 
 	/** Building types share faction access; the controller stores the persistent owner and faction IDs. */

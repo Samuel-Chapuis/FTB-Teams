@@ -1,7 +1,10 @@
 package dev.ftb.mods.ftbteams.world.block;
 
 import com.mojang.serialization.MapCodec;
+import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
@@ -10,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.AABB;
 
 /** First single-block workstation built on the enclosure interaction and storage rules. */
 public class CashRegisterBlock extends EnclosureBlock {
@@ -27,7 +31,9 @@ public class CashRegisterBlock extends EnclosureBlock {
 	}
 
 	@Override
-	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING); }
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		builder.add(FACING);
+	}
 
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
@@ -35,8 +41,22 @@ public class CashRegisterBlock extends EnclosureBlock {
 	}
 
 	@Override
-	protected BlockState rotate(BlockState state, Rotation rotation) { return state.setValue(FACING, rotation.rotate(state.getValue(FACING))); }
+	protected BlockState rotate(BlockState state, Rotation rotation) {
+		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+	}
 
 	@Override
-	protected BlockState mirror(BlockState state, Mirror mirror) { return state.rotate(mirror.getRotation(state.getValue(FACING))); }
+	protected BlockState mirror(BlockState state, Mirror mirror) {
+		return state.rotate(mirror.getRotation(state.getValue(FACING)));
+	}
+
+	@Override
+	public int getWorkerCount(ServerLevel level, BlockPos pos) {
+		return Math.min(1, level.getEntitiesOfClass(MinionEntity.class, new AABB(pos).inflate(3), minion -> minion.isWorkingAt(pos)).size());
+	}
+
+	@Override
+	public boolean showsWorkerStatus() {
+		return true;
+	}
 }

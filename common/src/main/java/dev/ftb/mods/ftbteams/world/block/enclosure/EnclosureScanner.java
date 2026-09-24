@@ -1,4 +1,4 @@
-package dev.ftb.mods.ftbteams.world.block;
+package dev.ftb.mods.ftbteams.world.block.enclosure;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -12,23 +12,42 @@ public final class EnclosureScanner {
 	private EnclosureScanner() {
 	}
 
-	public enum Cell { AIR, SOLID, UNAVAILABLE }
-	public enum Status { UNCHECKED, SEALED, OUT_OF_RANGE, UNAVAILABLE, NO_INTERIOR }
+	/** Classification used by the scanner without depending on Minecraft block classes. */
+	public enum Cell {
+		AIR,
+		SOLID,
+		UNAVAILABLE
+	}
+
+	/** Complete set of enclosure scan outcomes displayed by the controller interface. */
+	public enum Status {
+		UNCHECKED,
+		SEALED,
+		OUT_OF_RANGE,
+		UNAVAILABLE,
+		NO_INTERIOR
+	}
+
+	/** Integer position independent of Minecraft, allowing the flood fill to remain unit-testable. */
 	public record Position(int x, int y, int z) {
-		Position offset(int x, int y, int z) {
+		/** Returns a neighboring immutable scan position. */
+		public Position offset(int x, int y, int z) {
 			return new Position(this.x + x, this.y + y, this.z + z);
 		}
 	}
+	/** Immutable scan result containing the room interior and its solid boundary. */
 	public record Result(Status status, int volume, Set<Position> boundary, Set<Position> interior) {
 		public Result(Status status, int volume) {
 			this(status, volume, Set.of(), Set.of());
 		}
 	}
+	/** Supplies cells to the pure flood-fill algorithm. */
 	@FunctionalInterface
 	public interface CellLookup {
 		Cell get(Position pos);
 	}
 
+	/** Flood-fills all seeds through air until a closed boundary or a failure condition is reached. */
 	public static Result scan(Position origin, List<Position> seeds, int radius, CellLookup lookup) {
 		if (radius < 1 || radius > 32) {
 			throw new IllegalArgumentException("Enclosure radius must be between 1 and 32");

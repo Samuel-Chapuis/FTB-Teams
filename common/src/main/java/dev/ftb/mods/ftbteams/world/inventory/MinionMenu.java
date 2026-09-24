@@ -2,6 +2,7 @@ package dev.ftb.mods.ftbteams.world.inventory;
 
 import dev.ftb.mods.ftbteams.FTBTeams;
 import dev.ftb.mods.ftbteams.world.entity.MinionEntity;
+import dev.ftb.mods.ftbteams.world.faction.FactionAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
@@ -33,7 +34,11 @@ public class MinionMenu extends AbstractContainerMenu {
 	}
 
 	public MinionMenu(int id, Inventory inventory, MinionEntity minion) {
-		this(id, inventory, minion.getId(), minion.getFactionName(), minion.getFactionColor(), minion.getFactionLogo(), minion.getProfession(),
+		this(id, inventory, minion, minion.getFactionProfile());
+	}
+
+	private MinionMenu(int id, Inventory inventory, MinionEntity minion, FactionAccess.Profile faction) {
+		this(id, inventory, minion.getId(), faction.name(), faction.color(), faction.logo(), minion.getProfession(),
 				minion.getProfessionStack(), minion.getHome().orElse(null), minion.getWorkstation().orElse(null));
 	}
 
@@ -67,10 +72,21 @@ public class MinionMenu extends AbstractContainerMenu {
 		return factionLogo;
 	}
 
-	public String getProfession() { return profession; }
-	public ItemStack getProfessionStack() { return professionStack; }
-	public BlockPos getHome() { return home; }
-	public BlockPos getWorkstation() { return workstation; }
+	public String getProfession() {
+		return profession;
+	}
+
+	public ItemStack getProfessionStack() {
+		return professionStack;
+	}
+
+	public BlockPos getHome() {
+		return home;
+	}
+
+	public BlockPos getWorkstation() {
+		return workstation;
+	}
 
 	@Override
 	public boolean clickMenuButton(Player player, int id) {

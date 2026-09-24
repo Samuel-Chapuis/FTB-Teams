@@ -1,24 +1,28 @@
 package dev.ftb.mods.ftbteams.world.inventory;
 
 import dev.ftb.mods.ftbteams.FTBTeams;
-import dev.ftb.mods.ftblibrary.util.NetworkHelper;
 import dev.ftb.mods.ftbteams.net.EnclosurePreviewMessage;
-import dev.ftb.mods.ftbteams.world.block.EnclosurePreview;
-import dev.ftb.mods.ftbteams.world.entity.MinionHousing;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
 import dev.ftb.mods.ftbteams.world.block.EnclosureBlock;
-import dev.ftb.mods.ftbteams.world.block.EnclosureBlockEntity;
-import dev.ftb.mods.ftbteams.world.block.EnclosureScanner;
-import dev.ftb.mods.ftbteams.world.block.CashRegisterBlock;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosurePreview;
+import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureScanner;
+import dev.ftb.mods.ftbteams.world.block.entity.EnclosureBlockEntity;
+import dev.ftb.mods.ftbteams.world.entity.minion.MinionHousing;
+import dev.ftb.mods.ftbteams.world.inventory.slot.ExtractOnlySlot;
+import dev.ftb.mods.ftblibrary.util.NetworkHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
+/** Server-authoritative menu for enclosure status, optional storage, and player inventory transfers. */
 public class EnclosureMenu extends AbstractContainerMenu {
 	public static final int CHECK_BUTTON = 0;
 	public static final int STORAGE_X = 14;
@@ -30,7 +34,7 @@ public class EnclosureMenu extends AbstractContainerMenu {
 	private final int storageSize;
 	private final Player viewer;
 	private BlockPos origin;
-	private boolean cashRegister;
+	private boolean workerStatus;
 	private EnclosurePreview preview = EnclosurePreview.EMPTY;
 	private EnclosurePreview lastSentPreview;
 
@@ -38,10 +42,10 @@ public class EnclosureMenu extends AbstractContainerMenu {
 		this(id, inventory, new SimpleContainer(buf.readVarInt()), new SimpleContainerData(4), buf.readBlockPos(), buf.readBoolean());
 	}
 
-	private EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data, BlockPos origin, boolean cashRegister) {
+	private EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data, BlockPos origin, boolean workerStatus) {
 		this(id, inventory, container, data);
 		this.origin = origin;
-		this.cashRegister = cashRegister;
+		this.workerStatus = workerStatus;
 	}
 
 	public EnclosureMenu(int id, Inventory inventory, Container container, ContainerData data) {
@@ -55,17 +59,14 @@ public class EnclosureMenu extends AbstractContainerMenu {
 			throw new IllegalArgumentException("Enclosure storage must have 0 or 25 slots");
 		}
 		checkContainerDataCount(data, 4);
-		cashRegister = container instanceof EnclosureBlockEntity enclosure
-				&& enclosure.getBlockState().getBlock() instanceof CashRegisterBlock;
+		workerStatus = container instanceof EnclosureBlockEntity enclosure
+				&& enclosure.getBlockState().getBlock() instanceof EnclosureBlock block && block.showsWorkerStatus();
 		container.startOpen(inventory.player);
 		for (int slot = 0; slot < storageSize; slot++) {
-			final int containerSlot = slot;
-			addSlot(new Slot(container, containerSlot, STORAGE_X + containerSlot % 5 * 18, storageY(containerSlot)) {
-				@Override
-				public boolean mayPlace(ItemStack stack) {
-					return containerSlot < EnclosureBlock.INPUT_SLOTS && super.mayPlace(stack);
-				}
-			});
+			int x = STORAGE_X + slot % 5 * 18;
+			addSlot(slot < EnclosureBlock.INPUT_SLOTS
+					? new Slot(container, slot, x, storageY(slot))
+					: new ExtractOnlySlot(container, slot, x, storageY(slot)));
 		}
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 9; col++) {
@@ -129,9 +130,13 @@ public class EnclosureMenu extends AbstractContainerMenu {
 		return MinionHousing.Status.values()[data.get(2)];
 	}
 
-	public boolean isCashRegister() { return cashRegister; }
+	public boolean showsWorkerStatus() {
+		return workerStatus;
+	}
 
-	public int getWorkingMinions() { return data.get(3); }
+	public int getWorkingMinions() {
+		return data.get(3);
+	}
 
 	@Override
 	public boolean clickMenuButton(Player player, int id) {

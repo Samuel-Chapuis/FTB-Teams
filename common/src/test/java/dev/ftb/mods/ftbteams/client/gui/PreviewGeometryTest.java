@@ -2,7 +2,7 @@ package dev.ftb.mods.ftbteams.client.gui;
 
 import java.util.List;
 
-import static dev.ftb.mods.ftbteams.client.gui.PreviewGeometry.*;
+import static dev.ftb.mods.ftbteams.client.gui.enclosure.PreviewGeometry.*;
 
 /** Tests actual polygon slicing, not just block-center visibility. No rendering context required. */
 public final class PreviewGeometryTest {

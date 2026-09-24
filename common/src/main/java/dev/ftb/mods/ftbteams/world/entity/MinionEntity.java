@@ -139,17 +139,26 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	}
 
 	/** Assigns or releases the workstation retained across work, leisure, and sleep periods. */
-	public void assignWorkstation(BlockPos pos) {
+	public boolean assignWorkstation(BlockPos pos) {
+		if (!level().isClientSide && pos != null && !MinionWorkstations.claim(this, pos)) {
+			return false;
+		}
+		if (!level().isClientSide && pos == null) {
+			MinionWorkstations.release(this);
+		}
 		entityData.set(WORKSTATION, Optional.ofNullable(pos == null ? null : pos.immutable()));
 		if (pos == null) {
 			stopWorking();
 			entityData.set(PROFESSION, "");
 		}
+		return true;
 	}
 
 	/** Reserves the workstation and derives the displayed profession from its block. */
 	public void startWorkingAt(BlockPos pos) {
-		assignWorkstation(pos);
+		if (!assignWorkstation(pos)) {
+			return;
+		}
 		activeWorkstation = pos.immutable();
 		entityData.set(PROFESSION, level().getBlockState(pos).getBlock().getDescriptionId());
 	}
@@ -392,6 +401,7 @@ public class MinionEntity extends PathfinderMob implements ExtendedMenuProvider 
 	@Override
 	public void remove(RemovalReason reason) {
 		if (reason.shouldDestroy() && level() instanceof ServerLevel server) {
+			MinionWorkstations.release(this);
 			getHome().ifPresent(home -> MinionPopulationData.get(server).release(home, getUUID()));
 		}
 		super.remove(reason);

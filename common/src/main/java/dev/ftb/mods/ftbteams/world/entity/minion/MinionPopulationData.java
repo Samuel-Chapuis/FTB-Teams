@@ -25,6 +25,10 @@ public class MinionPopulationData extends SavedData {
 		return assignments.get(home.asLong());
 	}
 
+	public boolean containsResident(UUID minion) {
+		return assignments.containsResident(minion);
+	}
+
 	public boolean claim(BlockPos home, UUID minion, UUID owner, UUID faction) {
 		boolean changed = assignments.claim(home.asLong(), minion, owner, faction);
 		if (changed) {

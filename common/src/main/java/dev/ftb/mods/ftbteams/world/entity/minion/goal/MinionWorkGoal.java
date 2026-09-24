@@ -25,19 +25,29 @@ public final class MinionWorkGoal extends Goal {
 
 	@Override
 	public boolean canUse() {
-		if (MinionSchedule.isSleepTime(minion.level().getDayTime()) || minion.isResting() || --searchCooldown > 0) {
+		if (MinionSchedule.isSleepTime(minion.level().getDayTime()) || minion.isResting()) {
 			return false;
 		}
-		searchCooldown = 40;
-		var assignment = MinionJobs.assignedJob(minion)
+		var retainedAssignment = MinionJobs.assignedJob(minion)
 				.filter(value -> value.job().isWorkTime(minion.level().getDayTime())
-						&& value.job().isAvailable(minion, value.workstation()))
-				.or(() -> MinionJobs.findAvailableJob(minion));
+						&& value.job().isAvailable(minion, value.workstation()));
+		if (retainedAssignment.isPresent()) {
+			return select(retainedAssignment.orElseThrow());
+		}
+		if (--searchCooldown > 0) {
+			return false;
+		}
+		searchCooldown = 200;
+		var assignment = MinionJobs.findAvailableJob(minion);
 		if (assignment.isEmpty()) {
 			return false;
 		}
-		job = assignment.get().job();
-		target = assignment.get().workstation();
+		return select(assignment.orElseThrow());
+	}
+
+	private boolean select(MinionJobs.Assignment assignment) {
+		job = assignment.job();
+		target = assignment.workstation();
 		return true;
 	}
 
@@ -56,7 +66,10 @@ public final class MinionWorkGoal extends Goal {
 	public void start() {
 		minion.standFromBench();
 		repathDelay = 0;
-		minion.assignWorkstation(target);
+		if (!minion.assignWorkstation(target)) {
+			job = null;
+			target = null;
+		}
 	}
 
 	@Override
@@ -79,7 +92,7 @@ public final class MinionWorkGoal extends Goal {
 			minion.setDeltaMovement(Vec3.ZERO);
 			minion.startWorkingAt(target);
 		} else if (--repathDelay <= 0) {
-			repathDelay = 20;
+			repathDelay = 40;
 			minion.getNavigation().moveTo(destination.x, destination.y, destination.z, 1);
 		}
 	}

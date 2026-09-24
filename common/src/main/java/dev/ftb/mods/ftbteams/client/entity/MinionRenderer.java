@@ -46,7 +46,8 @@ public class MinionRenderer extends MobRenderer<MinionEntity, MinionModel> {
 	@Override
 	protected void scale(MinionEntity entity, PoseStack pose, float partialTick) {
 		if (entity.isSittingOnBench()) {
-			pose.translate(0, 0.3, 0);
+			pose.translate(0, 0.3
+				, 0);
 		}
 		float scale = 0.9375F / MinionEntity.BODY_DIVISOR;
 		pose.scale(scale, scale, scale);

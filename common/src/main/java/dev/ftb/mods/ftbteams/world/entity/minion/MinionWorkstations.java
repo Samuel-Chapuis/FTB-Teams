@@ -8,8 +8,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 
+import java.util.UUID;
 import java.util.function.Predicate;
 
 /** Stateless queries for locating and reserving a faction workstation. */
@@ -58,8 +58,25 @@ public final class MinionWorkstations {
 				|| minion.getFactionId() == null || !minion.getFactionId().equals(enclosure.getFactionId())) {
 			return false;
 		}
-		return level.getEntitiesOfClass(MinionEntity.class, new AABB(pos).inflate(3),
-				other -> other != minion && other.isAssignedTo(pos)).isEmpty();
+		UUID worker = MinionWorkplaceData.get(level).workerAt(pos);
+		if (worker != null && !worker.equals(minion.getUUID())
+				&& !MinionPopulationData.get(level).containsResident(worker)) {
+			MinionWorkplaceData.get(level).release(worker);
+			worker = null;
+		}
+		return worker == null || worker.equals(minion.getUUID());
+	}
+
+	/** Atomically reserves a validated workstation for this minion. */
+	public static boolean claim(MinionEntity minion, BlockPos pos) {
+		return minion.level() instanceof ServerLevel level && MinionWorkplaceData.get(level).claim(pos, minion.getUUID());
+	}
+
+	/** Releases this minion's persistent workstation without loading its chunk. */
+	public static void release(MinionEntity minion) {
+		if (minion.level() instanceof ServerLevel level) {
+			MinionWorkplaceData.get(level).release(minion.getUUID());
+		}
 	}
 
 	public static ItemStack icon(MinionEntity minion) {

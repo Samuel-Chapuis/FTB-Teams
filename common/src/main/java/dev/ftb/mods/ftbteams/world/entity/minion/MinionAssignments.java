@@ -16,6 +16,10 @@ public final class MinionAssignments {
 		return homes.get(home);
 	}
 
+	public boolean containsResident(UUID minion) {
+		return residents.containsKey(minion);
+	}
+
 	public boolean claim(long home, UUID minion, UUID owner, UUID faction) {
 		if (homes.containsKey(home) || residents.containsKey(minion)) {
 			return false;

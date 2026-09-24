@@ -37,10 +37,9 @@ public final class MinionPersistence {
 		minion.restoreCustomSkin(tag.getString("MinionCustomSkin"), legacySkinUuid(tag));
 		foodTracker.load(tag);
 		restoreHome(minion, tag);
-		if (tag.contains("MinionWorkstation")) {
-			minion.assignWorkstation(BlockPos.of(tag.getLong("MinionWorkstation")));
-		}
-		if (tag.contains("MinionProfession")) {
+		boolean workstationRestored = tag.contains("MinionWorkstation")
+				&& minion.assignWorkstation(BlockPos.of(tag.getLong("MinionWorkstation")));
+		if (workstationRestored && tag.contains("MinionProfession")) {
 			minion.restoreProfession(tag.getString("MinionProfession"));
 		}
 	}

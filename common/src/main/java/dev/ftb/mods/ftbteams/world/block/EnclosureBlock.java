@@ -4,6 +4,7 @@ import dev.architectury.registry.menu.MenuRegistry;
 import dev.ftb.mods.ftbteams.world.block.enclosure.EnclosureScanner;
 import dev.ftb.mods.ftbteams.world.block.entity.EnclosureBlockEntity;
 import dev.ftb.mods.ftbteams.world.faction.FactionAccess;
+import dev.ftb.mods.ftbteams.world.entity.minion.MinionWorkplaceData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
@@ -109,6 +110,9 @@ public abstract class EnclosureBlock extends BaseEntityBlock {
 	@Override
 	protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
 		if (!state.is(newState.getBlock())) {
+			if (level instanceof ServerLevel server) {
+				MinionWorkplaceData.get(server).remove(getControllerPos(state, pos));
+			}
 			if (!level.isClientSide && level.getBlockEntity(pos) instanceof EnclosureBlockEntity enclosure) {
 				Containers.dropContents(level, pos, enclosure);
 				level.updateNeighbourForOutputSignal(pos, this);
